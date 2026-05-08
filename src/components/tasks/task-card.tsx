@@ -3,6 +3,7 @@
 import { deleteTask } from "@/actions/tasks";
 import { cn, formatDateRelative } from "@/lib/utils";
 import { AlertCircle, Calendar, Trash2 } from "lucide-react";
+import { SubTaskList } from "./subtask-list";
 import type { SerializedTask } from "@/types";
 
 const statusColors: Record<string, string> = {
@@ -71,6 +72,12 @@ export function TaskCard({ task }: Props) {
           </span>
         )}
       </div>
+
+      {task.subtasks && (
+        <div onMouseDown={(e) => e.stopPropagation()}>
+          <SubTaskList taskId={task.id} subtasks={task.subtasks} />
+        </div>
+      )}
     </div>
   );
 }

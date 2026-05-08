@@ -15,6 +15,15 @@ export const TaskPriority = {
 
 export type TaskPriority = (typeof TaskPriority)[keyof typeof TaskPriority];
 
+export type SerializedSubTask = {
+  id: string;
+  title: string;
+  completed: boolean;
+  taskId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type SerializedTask = {
   id: string;
   title: string;
@@ -28,6 +37,7 @@ export type SerializedTask = {
   assignee: { id: string; name: string | null; email: string } | null;
   createdAt: string;
   updatedAt: string;
+  subtasks?: SerializedSubTask[];
 };
 
 export type SerializedProject = {
