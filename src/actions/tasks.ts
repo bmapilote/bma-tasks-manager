@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
 import { TaskStatus, TaskPriority } from "@/types";
+import { logActivity } from "@/lib/activity-log";
 
 function getUserIdOrThrow(session: Session | null): string {
   if (!session?.user?.id) throw new Error("Non authentifié");
@@ -51,6 +52,11 @@ export async function createTask(formData: FormData) {
   });
 
   logger.info({ taskId: task.id, projectId }, "task:created");
+  await logActivity(userId, "task:created", task.id, "task", {
+    title: task.title,
+    projectName: project.name,
+    projectId,
+  });
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/tasks");
 }
@@ -88,6 +94,11 @@ export async function updateTask(id: string, formData: FormData) {
   });
 
   logger.info({ taskId: id }, "task:updated");
+  await logActivity(userId, "task:updated", id, "task", {
+    title: task.title,
+    projectName: task.project.name,
+    projectId: task.projectId,
+  });
   revalidatePath(`/projects/${task.projectId}`);
   revalidatePath("/tasks");
 }
@@ -122,6 +133,13 @@ export async function updateTaskStatus(id: string, status: TaskStatus) {
     },
   });
 
+  if (status === "DONE") {
+    await logActivity(userId, "task:completed", id, "task", {
+      title: task.title,
+      projectName: task.project.name,
+      projectId: task.projectId,
+    });
+  }
   revalidatePath(`/projects/${task.projectId}`);
   revalidatePath("/tasks");
 }
@@ -142,6 +160,11 @@ export async function deleteTask(id: string): Promise<void> {
   await prisma.task.delete({ where: { id } });
 
   logger.info({ taskId: id }, "task:deleted");
+  await logActivity(userId, "task:deleted", id, "task", {
+    title: task.title,
+    projectName: task.project.name,
+    projectId: task.projectId,
+  });
   revalidatePath(`/projects/${task.projectId}`);
   revalidatePath("/tasks");
 }

@@ -1,12 +1,13 @@
 "use server";
 
-import { getServerSession } from "next-auth";
+import { getServerSession, type Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
+import { logActivity } from "@/lib/activity-log";
 
-function getUserIdOrThrow(session: Awaited<ReturnType<typeof getServerSession>>): string {
+function getUserIdOrThrow(session: Session | null): string {
   if (!session?.user?.id) throw new Error("Non authentifié");
   return session.user.id;
 }
@@ -38,6 +39,10 @@ export async function createSubTask(formData: FormData) {
   });
 
   logger.info({ taskId }, "subtask:created");
+  await logActivity(userId, "subtask:added", taskId, "subtask", {
+    title: title.trim(),
+    projectId: task.projectId,
+  });
   revalidatePath(`/projects/${task.projectId}`);
 }
 

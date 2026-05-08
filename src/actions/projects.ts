@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { logger } from "@/lib/logger";
+import { logActivity } from "@/lib/activity-log";
 
 function getUserIdOrThrow(session: Session | null): string {
   if (!session?.user?.id) throw new Error("Non authentifié");
@@ -34,6 +35,9 @@ export async function createProject(formData: FormData) {
   });
 
   logger.info({ projectId: project.id }, "project:created");
+  await logActivity(userId, "project:created", project.id, "project", {
+    title: project.name,
+  });
   revalidatePath("/projects");
   revalidatePath("/dashboard");
   redirect(`/projects/${project.id}`);
@@ -80,6 +84,9 @@ export async function deleteProject(id: string): Promise<void> {
   await prisma.project.delete({ where: { id } });
 
   logger.info({ projectId: id }, "project:deleted");
+  await logActivity(userId, "project:deleted", id, "project", {
+    title: project.name,
+  });
   revalidatePath("/projects");
   redirect("/projects");
 }
