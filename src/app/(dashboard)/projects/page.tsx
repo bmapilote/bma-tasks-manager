@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireUser } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { ProjectCard } from "@/components/projects/project-card";
 import { ProjectForm } from "@/components/projects/project-form";
@@ -8,11 +7,10 @@ import { Plus } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function ProjectsPage() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return null;
+  const user = await requireUser();
 
   const projects = await prisma.project.findMany({
-    where: { ownerId: session.user.id },
+    where: { ownerId: user.id },
     orderBy: { updatedAt: "desc" },
     include: { _count: { select: { tasks: true } } },
   });

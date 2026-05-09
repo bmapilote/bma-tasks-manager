@@ -1,20 +1,53 @@
 "use client";
 
-import { useActionState } from "react";
-import { register } from "@/actions/auth";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 
 export function RegisterForm() {
-  const [state, formAction, isPending] = useActionState<{ error: string } | undefined, FormData>(
-    async (prev, formData) => register(prev, formData),
-    undefined
-  );
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const form = new FormData(e.currentTarget);
+    const name = form.get("name") as string;
+    const email = form.get("email") as string;
+    const password = form.get("password") as string;
+
+    if (password.length < 6) {
+      setError("Le mot de passe doit contenir au moins 6 caractères");
+      setLoading(false);
+      return;
+    }
+
+    const supabase = createClient();
+    const { error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name: name || undefined } },
+    });
+
+    if (authError) {
+      setError(`Erreur d'inscription (${authError.message})`);
+      setLoading(false);
+      return;
+    }
+
+    router.push("/login?registered=true");
+    router.refresh();
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
-      {state?.error && (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
         <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
-          {state.error}
+          {error}
         </div>
       )}
 
@@ -62,10 +95,10 @@ export function RegisterForm() {
 
       <button
         type="submit"
-        disabled={isPending}
+        disabled={loading}
         className="flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
       >
-        {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Créer mon compte
       </button>
     </form>

@@ -9,11 +9,10 @@ datasource db {
 
 model User {
   id             String    @id @default(cuid())
+  supabaseId     String?   @unique
   name           String?
   email          String    @unique
-  emailVerified  DateTime?
-  image          String?
-  hashedPassword String?
+  avatarUrl      String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @default(now())
   projects       Project[]

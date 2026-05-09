@@ -1,21 +1,14 @@
 "use server";
 
-import { getServerSession, type Session } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireUser } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { logger } from "@/lib/logger";
 import { logActivity } from "@/lib/activity-log";
 
-function getUserIdOrThrow(session: Session | null): string {
-  if (!session?.user?.id) throw new Error("Non authentifié");
-  return session.user.id;
-}
-
 export async function createProject(formData: FormData) {
-  const session = await getServerSession(authOptions);
-  const userId = getUserIdOrThrow(session);
+  const { id: userId } = await requireUser();
 
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
@@ -44,8 +37,7 @@ export async function createProject(formData: FormData) {
 }
 
 export async function updateProject(id: string, formData: FormData) {
-  const session = await getServerSession(authOptions);
-  const userId = getUserIdOrThrow(session);
+  const { id: userId } = await requireUser();
 
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
@@ -72,8 +64,7 @@ export async function updateProject(id: string, formData: FormData) {
 }
 
 export async function deleteProject(id: string): Promise<void> {
-  const session = await getServerSession(authOptions);
-  const userId = getUserIdOrThrow(session);
+  const { id: userId } = await requireUser();
 
   const project = await prisma.project.findUnique({ where: { id } });
   if (!project || project.ownerId !== userId) {

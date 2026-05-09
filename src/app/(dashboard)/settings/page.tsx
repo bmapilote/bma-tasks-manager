@@ -1,16 +1,14 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireUser } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { SettingsForm } from "./settings-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return null;
+  const user = await requireUser();
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
     select: { name: true, email: true },
   });
 
@@ -22,7 +20,7 @@ export default async function SettingsPage() {
       </div>
 
       <div className="max-w-md">
-        <SettingsForm defaultName={user?.name || ""} defaultEmail={user?.email || ""} />
+        <SettingsForm defaultName={dbUser?.name || ""} defaultEmail={dbUser?.email || ""} />
       </div>
     </div>
   );

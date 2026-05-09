@@ -1,21 +1,14 @@
 "use server";
 
-import { getServerSession, type Session } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireUser } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
 import { TaskStatus, TaskPriority } from "@/types";
 import { logActivity } from "@/lib/activity-log";
 
-function getUserIdOrThrow(session: Session | null): string {
-  if (!session?.user?.id) throw new Error("Non authentifié");
-  return session.user.id;
-}
-
 export async function createTask(formData: FormData) {
-  const session = await getServerSession(authOptions);
-  const userId = getUserIdOrThrow(session);
+  const { id: userId } = await requireUser();
 
   const projectId = formData.get("projectId") as string;
   const title = formData.get("title") as string;
@@ -62,8 +55,7 @@ export async function createTask(formData: FormData) {
 }
 
 export async function updateTask(id: string, formData: FormData) {
-  const session = await getServerSession(authOptions);
-  const userId = getUserIdOrThrow(session);
+  const { id: userId } = await requireUser();
 
   const task = await prisma.task.findUnique({
     where: { id },
@@ -104,8 +96,7 @@ export async function updateTask(id: string, formData: FormData) {
 }
 
 export async function updateTaskStatus(id: string, status: TaskStatus) {
-  const session = await getServerSession(authOptions);
-  const userId = getUserIdOrThrow(session);
+  const { id: userId } = await requireUser();
 
   const task = await prisma.task.findUnique({
     where: { id },
@@ -145,8 +136,7 @@ export async function updateTaskStatus(id: string, status: TaskStatus) {
 }
 
 export async function deleteTask(id: string): Promise<void> {
-  const session = await getServerSession(authOptions);
-  const userId = getUserIdOrThrow(session);
+  const { id: userId } = await requireUser();
 
   const task = await prisma.task.findUnique({
     where: { id },

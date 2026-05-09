@@ -17,10 +17,9 @@ npx tsc --noEmit  # typecheck (no npm script, run manually)
 No tests or CI configured. No typecheck script in package.json — use `npx tsc --noEmit`.
 
 ## Next.js 16 quirks
-- `proxy.ts` (root, NOT `src/`) replaces `middleware.ts` — uses `next-auth/middleware` `withAuth`
+- `proxy.ts` (root, NOT `src/`) replaces `middleware.ts` — uses Supabase SSR middleware (NOT next-auth)
 - Route groups: `(auth)/` and `(dashboard)/` for layout scoping
-- Server Actions live in `src/actions/` (not co-located in routes). They use `"use server"`, `getServerSession` for auth, and `revalidatePath`/`redirect` for cache invalidation
-- API route at `src/app/api/auth/[...nextauth]/route.ts`
+- Server Actions live in `src/actions/` (not co-located in routes). They use `"use server"`, `requireUser()` for auth, and `revalidatePath`/`redirect` for cache invalidation
 
 ## Prisma + Supabase PostgreSQL
 - Schema: `prisma/schema.prisma` — PostgreSQL (Supabase), 5 models (User, Project, Task, SubTask, ActivityLog)
@@ -39,11 +38,12 @@ npx prisma studio     # GUI data browser (via Supabase proxy)
 - To re-run: update `.env` to SQLite temporarily, run the script, then restore PostgreSQL URL
 
 ## Auth
-- next-auth v4, CredentialsProvider + JWT strategy
-- Session user type augmented in `src/types/next-auth.d.ts` (adds `id` field)
-- `authOptions` in `src/lib/auth.ts` — shared by API route and Server Actions
+- Supabase Auth (email/password), no next-auth
+- Session managed via `@supabase/ssr` cookies
+- Server-side auth helper at `src/lib/require-user.ts` — gets Supabase session, returns Prisma user (auto-links by email on first login)
+- Client-side auth context at `src/components/auth/supabase-provider.tsx` — `useSupabaseUser()` hook
 - Protected routes via `proxy.ts` (root), public: `/`, `/login`, `/register`
-- Login form uses `useActionState` (React 19 native) with `register` action
+- Login form uses `supabase.auth.signInWithPassword()`, register form uses `supabase.auth.signUp()`
 
 ## Paths & imports
 - `@/*` → `./src/*` (tsconfig paths)
@@ -54,7 +54,7 @@ npx prisma studio     # GUI data browser (via Supabase proxy)
 ## State management
 - Client state: `@tanstack/react-query` (`QueryClientProvider` in dashboard layout)
 - Form state: React 19 `useActionState` (native, no react-hook-form)
-- Auth session: `SessionProvider` from `next-auth/react` (dashboard layout)
+- Auth session: `SupabaseProvider` from `src/components/auth/supabase-provider.tsx` (dashboard layout)
 
 ## Style
 - Tailwind CSS v4 with `@tailwindcss/postcss` (PostCSS config at root, NOT Tailwind config file)
@@ -63,10 +63,10 @@ npx prisma studio     # GUI data browser (via Supabase proxy)
 - `cn()` utility in `src/lib/utils.ts` (class-variance-authority style merging)
 
 ## Architecture notes
-- Dashboard layout (`src/app/(dashboard)/layout.tsx`) wraps `SessionProvider` + `QueryClientProvider` — new `QueryClient()` created per layout mount (OK for client components in app router)
+- Dashboard layout (`src/app/(dashboard)/layout.tsx`) wraps `SupabaseProvider` + `QueryClientProvider` — new `QueryClient()` created per layout mount (OK for client components in app router)
 - Server Actions own all data mutations; React Query used for client cache/refetch of reads where interactive
 - Kanban uses native HTML5 drag & drop (no dnd-kit)
-- `env` vars required: `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL` (see `.env.example`)
+- `env` vars required: `DATABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (see `.env` / `.env.local`)
 
 ## Netlify deployment
 
@@ -80,9 +80,11 @@ Set these under **Site settings → Environment variables** (do NOT commit to `.
 
 | Variable | Value |
 |---|---|
-| `DATABASE_URL` | `postgresql://postgres:pass@db.mejeujwrxkyfhyfzgag.supabase.co:5432/postgres?sslmode=require&connection_limit=1` |
-| `NEXTAUTH_URL` | `https://<site-name>.netlify.app` |
-| `NEXTAUTH_SECRET` | Same value as local `.env` (or regenerate via `openssl rand -base64 32`) |
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | `postgresql://postgres:pass@db.okxlsimomewvtfwsgirn.supabase.co:5432/postgres?sslmode=require&connection_limit=1` |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://okxlsimomewvtfwsgirn.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` (your anon key) |
 
 **Critical:** If Supabase pooler (port 6543) is unreachable, use direct connection (port 5432) with `connection_limit=1`. To use the pooler, enable it first in **Supabase Dashboard → Database → Connection pooling**, then switch to port 6543 with `pgbouncer=true`.
 

@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireUser } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { getDashboardData } from "@/lib/dashboard-data";
 import { StatsGrid } from "@/components/dashboard/stats-grid";
@@ -15,10 +14,8 @@ type Props = {
 };
 
 export default async function DashboardPage({ searchParams }: Props) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return null;
+  const user = await requireUser();
 
-  const userId = session.user.id;
   const params = await searchParams;
   const filters = {
     projectId: params?.projectId,
@@ -28,9 +25,9 @@ export default async function DashboardPage({ searchParams }: Props) {
   };
 
   const [data, projectNames] = await Promise.all([
-    getDashboardData(userId, filters),
+    getDashboardData(user.id, filters),
     prisma.project.findMany({
-      where: { ownerId: userId },
+      where: { ownerId: user.id },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
@@ -44,7 +41,7 @@ export default async function DashboardPage({ searchParams }: Props) {
             Tableau de bord
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Bon retour, {session.user.name || session.user.email?.split("@")[0]}
+            Bon retour, {user.name || user.email?.split("@")[0]}
           </p>
         </div>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useSupabaseUser } from "@/components/auth/supabase-provider";
 
 type Props = {
   defaultName: string;
@@ -8,7 +8,7 @@ type Props = {
 };
 
 export function SettingsForm({ defaultName, defaultEmail }: Props) {
-  const { data: session } = useSession();
+  const { user } = useSupabaseUser();
 
   return (
     <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-5">

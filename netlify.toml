@@ -5,15 +5,11 @@
 #
 # DATABASE_URL
 #   Supabase PostgreSQL with connection_limit=1 for serverless.
-#   Example: postgresql://postgres:pass@db.mejeujwrxkyfhyfzgag.supabase.co:5432/postgres?sslmode=require&connection_limit=1
+#   postgresql://postgres:pass@db.okxlsimomewvtfwsgirn.supabase.co:5432/postgres?sslmode=require&connection_limit=1
 #
-#   If pooler is enabled in Supabase Dashboard (Database → Connection pooling), use port 6543 with pgbouncer=true:
-#   postgresql://postgres:pass@db.mejeujwrxkyfhyfzgag.supabase.co:6543/postgres?sslmode=require&pgbouncer=true&connection_limit=1
+# NEXT_PUBLIC_SUPABASE_URL
+#   Your Supabase project URL.
+#   https://okxlsimomewvtfwsgirn.supabase.co
 #
-# NEXTAUTH_URL
-#   Your Netlify production URL.
-#   Example: https://bma-task-manager.netlify.app
-#
-# NEXTAUTH_SECRET
-#   Random string for JWT encryption.
-#   Generate with: openssl rand -base64 32
+# NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+#   Your Supabase anon/publishable key.

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { SessionProvider } from "next-auth/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SupabaseProvider } from "@/components/auth/supabase-provider";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 
@@ -16,7 +16,7 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <SessionProvider>
+    <SupabaseProvider>
       <QueryClientProvider client={queryClient}>
         <div className="flex min-h-screen">
           <div className="hidden lg:block">
@@ -41,6 +41,6 @@ export default function DashboardLayout({
           </div>
         </div>
       </QueryClientProvider>
-    </SessionProvider>
+    </SupabaseProvider>
   );
 }

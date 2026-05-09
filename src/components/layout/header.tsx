@@ -1,15 +1,17 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import { Menu } from "lucide-react";
 import { DarkModeToggle } from "@/components/ui/dark-mode-toggle";
+import { useSupabaseUser } from "@/components/auth/supabase-provider";
 
 type HeaderProps = {
   onMenuToggle: () => void;
 };
 
 export function Header({ onMenuToggle }: HeaderProps) {
-  const { data: session } = useSession();
+  const { user } = useSupabaseUser();
+  const displayName = user?.user_metadata?.name as string | undefined;
+  const initial = displayName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "U";
 
   return (
     <header className="flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4 lg:px-6 dark:border-gray-700 dark:bg-gray-800">
@@ -25,10 +27,10 @@ export function Header({ onMenuToggle }: HeaderProps) {
       <div className="flex items-center gap-2">
         <DarkModeToggle />
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-          {session?.user?.name?.charAt(0)?.toUpperCase() || session?.user?.email?.charAt(0)?.toUpperCase() || "U"}
+          {initial}
         </div>
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          {session?.user?.name || session?.user?.email || "Utilisateur"}
+          {displayName || user?.email || "Utilisateur"}
         </span>
       </div>
     </header>

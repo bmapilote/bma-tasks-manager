@@ -1,12 +1,14 @@
 import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 import { RegisterForm } from "@/components/auth/register-form";
 import Link from "next/link";
 
 export default async function RegisterPage() {
-  const session = await getServerSession(authOptions);
-  if (session) redirect("/dashboard");
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) redirect("/dashboard");
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 
 export function LoginForm() {
   const router = useRouter();
@@ -19,29 +19,24 @@ export function LoginForm() {
     const email = form.get("email") as string;
     const password = form.get("password") as string;
 
-    try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
+    const supabase = createClient();
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      if (result?.error) {
-        if (result.error === "CredentialsSignin") {
-          setError("Email ou mot de passe incorrect");
-        } else {
-          setError(`Erreur de connexion (${result.error}) — vérifiez la configuration NEXTAUTH_URL et DATABASE_URL`);
-        }
-        setLoading(false);
-        return;
+    if (authError) {
+      if (authError.message.includes("Invalid login credentials")) {
+        setError("Email ou mot de passe incorrect");
+      } else {
+        setError(`Erreur de connexion (${authError.message})`);
       }
-
-      router.push("/dashboard");
-      router.refresh();
-    } catch {
-      setError("Erreur réseau — impossible de contacter le serveur d'authentification");
       setLoading(false);
+      return;
     }
+
+    router.push("/dashboard");
+    router.refresh();
   }
 
   return (

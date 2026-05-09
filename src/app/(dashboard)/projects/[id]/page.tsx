@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireUser } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { TaskForm } from "@/components/tasks/task-form";
@@ -16,9 +15,7 @@ type Props = {
 };
 
 export default async function ProjectDetailPage({ params }: Props) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return null;
-
+  const user = await requireUser();
   const { id } = await params;
 
   const project = await prisma.project.findUnique({
@@ -34,7 +31,7 @@ export default async function ProjectDetailPage({ params }: Props) {
     },
   });
 
-  if (!project || project.ownerId !== session.user.id) {
+  if (!project || project.ownerId !== user.id) {
     notFound();
   }
 

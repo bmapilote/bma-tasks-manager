@@ -1,20 +1,13 @@
 "use server";
 
-import { getServerSession, type Session } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireUser } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
 import { logActivity } from "@/lib/activity-log";
 
-function getUserIdOrThrow(session: Session | null): string {
-  if (!session?.user?.id) throw new Error("Non authentifié");
-  return session.user.id;
-}
-
 export async function createSubTask(formData: FormData) {
-  const session = await getServerSession(authOptions);
-  const userId = getUserIdOrThrow(session);
+  const { id: userId } = await requireUser();
 
   const taskId = formData.get("taskId") as string;
   const title = formData.get("title") as string;
@@ -47,8 +40,7 @@ export async function createSubTask(formData: FormData) {
 }
 
 export async function updateSubTask(id: string, formData: FormData) {
-  const session = await getServerSession(authOptions);
-  const userId = getUserIdOrThrow(session);
+  const { id: userId } = await requireUser();
 
   const subTask = await prisma.subTask.findUnique({
     where: { id },
@@ -76,8 +68,7 @@ export async function updateSubTask(id: string, formData: FormData) {
 }
 
 export async function toggleSubTask(id: string) {
-  const session = await getServerSession(authOptions);
-  const userId = getUserIdOrThrow(session);
+  const { id: userId } = await requireUser();
 
   const subTask = await prisma.subTask.findUnique({
     where: { id },
@@ -110,8 +101,7 @@ export async function toggleSubTask(id: string) {
 }
 
 export async function deleteSubTask(id: string): Promise<void> {
-  const session = await getServerSession(authOptions);
-  const userId = getUserIdOrThrow(session);
+  const { id: userId } = await requireUser();
 
   const subTask = await prisma.subTask.findUnique({
     where: { id },

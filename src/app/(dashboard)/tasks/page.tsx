@@ -1,9 +1,8 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireUser } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
-import { AlertCircle, Calendar, FolderKanban } from "lucide-react";
+import { Calendar, FolderKanban } from "lucide-react";
 import { TaskStatus, TaskPriority } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -26,12 +25,10 @@ const priorityLabels: Record<string, string> = {
 };
 
 export default async function TasksPage({ searchParams }: Props) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return null;
-
+  const user = await requireUser();
   const { status, priority } = await searchParams;
 
-  const where: Record<string, unknown> = { project: { ownerId: session.user.id } };
+  const where: Record<string, unknown> = { project: { ownerId: user.id } };
   if (status && Object.values(TaskStatus).includes(status as TaskStatus)) {
     where.status = status;
   }
