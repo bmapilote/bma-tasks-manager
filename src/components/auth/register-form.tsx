@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
 export function RegisterForm() {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -39,8 +37,7 @@ export function RegisterForm() {
       return;
     }
 
-    router.push("/login?registered=true");
-    router.refresh();
+    window.location.href = "/login?registered=true";
   }
 
   return (
