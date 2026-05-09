@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Application
+metadata:
+  name: BMA Task Manager
+  slug: bma-task-manager
+  environment: DEV
+  owner: bma-team
+  client: BMA Internal
+spec:
+  type: FULLSTACK
+  stack: "Next.js 16, React 19, Prisma, SQLite/Postgres, next-auth v4, TanStack Query, Tailwind CSS v4, TypeScript"
+  repository:
+    url: "https://github.com/bma/bma-task-manager"
+    type: GITHUB
+  domains:
+    - hostname: "localhost:3000"
+      provider: LOCAL
+  servers:
+    - hostname: "dev-server"
+      ip: "127.0.0.1"
+      provider: LOCAL
+      region: local
+  secrets:
+    - name: database-url
+      type: DB_URL
+      backend: ENV
+      path: ".env"
+      key: DATABASE_URL
+    - name: nextauth-secret
+      type: JWT_SECRET
+      backend: ENV
+      path: ".env"
+      key: NEXTAUTH_SECRET
+    - name: nextauth-url
+      type: OTHER
+      backend: ENV
+      path: ".env"
+      key: NEXTAUTH_URL
