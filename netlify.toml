@@ -1,6 +1,9 @@
 [build]
   command = "npx prisma generate && npm run build"
 
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
+
 # Required environment variables (set in Netlify Dashboard — Site settings → Environment variables):
 #
 # DATABASE_URL
