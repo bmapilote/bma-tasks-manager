@@ -1,2 +1,16 @@
 [build]
   command = "npx prisma generate && npm run build"
+
+# Required environment variables (set in Netlify Dashboard — Site settings → Environment variables):
+#
+# DATABASE_URL
+#   Supabase PostgreSQL with pooler (port 6543) and PgBouncer params.
+#   Example: postgresql://postgres:pass@db.mejeujwrxkyfhyfzgag.supabase.co:6543/postgres?sslmode=require&pgbouncer=true&connection_limit=1
+#
+# NEXTAUTH_URL
+#   Your Netlify production URL.
+#   Example: https://bma-task-manager.netlify.app
+#
+# NEXTAUTH_SECRET
+#   Random string for JWT encryption.
+#   Generate with: openssl rand -base64 32

@@ -19,20 +19,29 @@ export function LoginForm() {
     const email = form.get("email") as string;
     const password = form.get("password") as string;
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-    if (result?.error) {
-      setError("Email ou mot de passe incorrect");
+      if (result?.error) {
+        if (result.error === "CredentialsSignin") {
+          setError("Email ou mot de passe incorrect");
+        } else {
+          setError(`Erreur de connexion (${result.error}) — vérifiez la configuration NEXTAUTH_URL et DATABASE_URL`);
+        }
+        setLoading(false);
+        return;
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      setError("Erreur réseau — impossible de contacter le serveur d'authentification");
       setLoading(false);
-      return;
     }
-
-    router.push("/dashboard");
-    router.refresh();
   }
 
   return (

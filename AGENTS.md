@@ -67,3 +67,28 @@ npx prisma studio     # GUI data browser (via Supabase proxy)
 - Server Actions own all data mutations; React Query used for client cache/refetch of reads where interactive
 - Kanban uses native HTML5 drag & drop (no dnd-kit)
 - `env` vars required: `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL` (see `.env.example`)
+
+## Netlify deployment
+
+### netlify.toml
+- Located at project root — build command: `npx prisma generate && npm run build`
+- OpenNext adapter is auto-injected at build time (no `@netlify/plugin-nextjs` needed)
+- `proxy.ts` runs as an Edge Function automatically
+
+### Required env vars in Netlify Dashboard
+Set these under **Site settings → Environment variables** (do NOT commit to `.env`):
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | `postgresql://postgres:pass@db.mejeujwrxkyfhyfzgag.supabase.co:6543/postgres?sslmode=require&pgbouncer=true&connection_limit=1` |
+| `NEXTAUTH_URL` | `https://<site-name>.netlify.app` |
+| `NEXTAUTH_SECRET` | Same value as local `.env` (or regenerate via `openssl rand -base64 32`) |
+
+**Critical:** `DATABASE_URL` must use port **6543** (pooler) with `pgbouncer=true&connection_limit=1` for serverless. Port 5432 (direct) will exhaust connections on Netlify Functions.
+
+### Login/register troubleshooting
+If auth fails on Netlify:
+1. Verify all 3 env vars above are set in the dashboard
+2. Check `NEXTAUTH_URL` matches the exact Netlify deployment URL
+3. Redeploy after changing env vars
+4. Login form now shows specific error messages — use them to diagnose
