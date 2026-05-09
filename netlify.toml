@@ -4,8 +4,11 @@
 # Required environment variables (set in Netlify Dashboard — Site settings → Environment variables):
 #
 # DATABASE_URL
-#   Supabase PostgreSQL with pooler (port 6543) and PgBouncer params.
-#   Example: postgresql://postgres:pass@db.mejeujwrxkyfhyfzgag.supabase.co:6543/postgres?sslmode=require&pgbouncer=true&connection_limit=1
+#   Supabase PostgreSQL with connection_limit=1 for serverless.
+#   Example: postgresql://postgres:pass@db.mejeujwrxkyfhyfzgag.supabase.co:5432/postgres?sslmode=require&connection_limit=1
+#
+#   If pooler is enabled in Supabase Dashboard (Database → Connection pooling), use port 6543 with pgbouncer=true:
+#   postgresql://postgres:pass@db.mejeujwrxkyfhyfzgag.supabase.co:6543/postgres?sslmode=require&pgbouncer=true&connection_limit=1
 #
 # NEXTAUTH_URL
 #   Your Netlify production URL.

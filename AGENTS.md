@@ -80,11 +80,11 @@ Set these under **Site settings → Environment variables** (do NOT commit to `.
 
 | Variable | Value |
 |---|---|
-| `DATABASE_URL` | `postgresql://postgres:pass@db.mejeujwrxkyfhyfzgag.supabase.co:6543/postgres?sslmode=require&pgbouncer=true&connection_limit=1` |
+| `DATABASE_URL` | `postgresql://postgres:pass@db.mejeujwrxkyfhyfzgag.supabase.co:5432/postgres?sslmode=require&connection_limit=1` |
 | `NEXTAUTH_URL` | `https://<site-name>.netlify.app` |
 | `NEXTAUTH_SECRET` | Same value as local `.env` (or regenerate via `openssl rand -base64 32`) |
 
-**Critical:** `DATABASE_URL` must use port **6543** (pooler) with `pgbouncer=true&connection_limit=1` for serverless. Port 5432 (direct) will exhaust connections on Netlify Functions.
+**Critical:** If Supabase pooler (port 6543) is unreachable, use direct connection (port 5432) with `connection_limit=1`. To use the pooler, enable it first in **Supabase Dashboard → Database → Connection pooling**, then switch to port 6543 with `pgbouncer=true`.
 
 ### Login/register troubleshooting
 If auth fails on Netlify:
