@@ -20,6 +20,12 @@ function fixRow(row) {
     if (key in fixed) fixed[key] = toDate(fixed[key]);
   }
   if ("completed" in fixed) fixed.completed = toBool(fixed.completed);
+  delete fixed.emailVerified;
+  delete fixed.hashedPassword;
+  delete fixed.image;
+  if ("avatarUrl" in fixed && !fixed.avatarUrl && row.image) {
+    fixed.avatarUrl = row.image;
+  }
   return fixed;
 }
 
@@ -36,29 +42,36 @@ async function migrate() {
 
   console.log(`Found: ${users.length} users, ${projects.length} projects, ${tasks.length} tasks, ${subtasks.length} subtasks, ${activityLogs.length} activity logs`);
 
-  if (users.length > 0) {
-    await prisma.user.createMany({ data: users, skipDuplicates: true });
-    console.log(`Migrated ${users.length} users`);
+  // Clear existing data in reverse dependency order
+  await prisma.activityLog.deleteMany();
+  await prisma.subTask.deleteMany();
+  await prisma.task.deleteMany();
+  await prisma.project.deleteMany();
+  await prisma.user.deleteMany();
+  console.log("Cleared existing data from Postgres");
+
+  for (const user of users) {
+    await prisma.user.create({ data: user });
+    console.log(`  Created user: ${user.email}`);
   }
 
-  if (projects.length > 0) {
-    await prisma.project.createMany({ data: projects, skipDuplicates: true });
-    console.log(`Migrated ${projects.length} projects`);
+  for (const project of projects) {
+    await prisma.project.create({ data: project });
+    console.log(`  Created project: ${project.name}`);
   }
 
-  if (tasks.length > 0) {
-    await prisma.task.createMany({ data: tasks, skipDuplicates: true });
-    console.log(`Migrated ${tasks.length} tasks`);
+  for (const task of tasks) {
+    await prisma.task.create({ data: task });
+    console.log(`  Created task: ${task.title}`);
   }
 
-  if (subtasks.length > 0) {
-    await prisma.subTask.createMany({ data: subtasks, skipDuplicates: true });
-    console.log(`Migrated ${subtasks.length} subtasks`);
+  for (const subtask of subtasks) {
+    await prisma.subTask.create({ data: subtask });
+    console.log(`  Created subtask: ${subtask.title}`);
   }
 
-  if (activityLogs.length > 0) {
-    await prisma.activityLog.createMany({ data: activityLogs, skipDuplicates: true });
-    console.log(`Migrated ${activityLogs.length} activity logs`);
+  for (const log of activityLogs) {
+    await prisma.activityLog.create({ data: log });
   }
 
   console.log("Migration complete!");
