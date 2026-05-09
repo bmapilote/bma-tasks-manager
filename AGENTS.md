@@ -22,16 +22,21 @@ No tests or CI configured. No typecheck script in package.json — use `npx tsc 
 - Server Actions live in `src/actions/` (not co-located in routes). They use `"use server"`, `getServerSession` for auth, and `revalidatePath`/`redirect` for cache invalidation
 - API route at `src/app/api/auth/[...nextauth]/route.ts`
 
-## Prisma + SQLite
-- Schema: `prisma/schema.prisma` — SQLite (`file:./dev.db`), 4 models (User, Project, Task, SubTask)
-- Dev DB already exists at `prisma/dev.db`
+## Prisma + Supabase PostgreSQL
+- Schema: `prisma/schema.prisma` — PostgreSQL (Supabase), 5 models (User, Project, Task, SubTask, ActivityLog)
+- Database hosted on Supabase (`db.mejeuwjrwxkyfhyfzgag.supabase.co`)
 ```sh
 npx prisma generate   # regen client after schema change
-npx prisma db push    # push schema to dev DB
-npx prisma studio     # GUI data browser
+npx prisma db push    # push schema to Supabase
+npx prisma studio     # GUI data browser (via Supabase proxy)
 ```
 - No migrations in use — `db push` is the workflow
-- No seed script yet
+- Connection: `DATABASE_URL` in `.env` uses port 5432 (direct) — use 6543 (pooler) for production
+- Supabase JS client available in `src/utils/supabase/` (server.ts, client.ts, middleware.ts)
+
+## Data migration
+- Migration script at `scripts/migrate-sqlite-to-supabase.mjs`
+- To re-run: update `.env` to SQLite temporarily, run the script, then restore PostgreSQL URL
 
 ## Auth
 - next-auth v4, CredentialsProvider + JWT strategy
