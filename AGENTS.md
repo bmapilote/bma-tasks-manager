@@ -94,3 +94,11 @@ If auth fails on Netlify:
 2. Check `NEXTAUTH_URL` matches the exact Netlify deployment URL
 3. Redeploy after changing env vars
 4. Login form now shows specific error messages — use them to diagnose
+
+### Server Component render error on `/dashboard` after login
+This error (`digest: 303979541` or similar) means the Server Component threw at runtime:
+1. **Check Netlify function logs** — The error message is sanitized in the browser but the real error appears in **Netlify → Site → Functions → Logs**. Look for `console.error` output with the digest.
+2. **Verify `DATABASE_URL` on Netlify** — This is the most common cause. Make sure it's set in **Netlify Dashboard → Site settings → Environment variables** with the correct pooler connection string:
+   `postgresql://postgres.okxlsimomewvtfwsgirn:pass@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true`
+3. **Supabase session cookie** — If the proxy runs but `requireUser()` fails, the auth session might not be propagating. Ensure `proxy.ts` (root) exists and exports `proxy` + `config`.
+4. **Prisma engine binary** — On Netlify Lambda, the native Prisma binary might be incompatible. If logs show engine errors, add `binaryTargets = ["native", "rhel-openssl-3.0.x"]` to `prisma/schema.prisma`.

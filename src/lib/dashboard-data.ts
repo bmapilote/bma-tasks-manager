@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { logger } from "./logger";
 
 export type DashboardFilters = {
   projectId?: string;
@@ -60,39 +61,47 @@ export async function getDashboardData(
     projectWhere["id"] = filters.projectId;
   }
 
-  const [projects, tasks, logs] = await Promise.all([
-    prisma.project.findMany({
-      where: projectWhere,
-      include: {
-        _count: { select: { tasks: true } },
-        tasks: {
-          select: {
-            id: true,
-            status: true,
-            priority: true,
-            dueDate: true,
-            createdAt: true,
-            updatedAt: true,
-            subtasks: { select: { completed: true } },
+  let projects, tasks, logs;
+  try {
+    [projects, tasks, logs] = await Promise.all([
+      prisma.project.findMany({
+        where: projectWhere,
+        include: {
+          _count: { select: { tasks: true } },
+          tasks: {
+            select: {
+              id: true,
+              status: true,
+              priority: true,
+              dueDate: true,
+              createdAt: true,
+              updatedAt: true,
+              subtasks: { select: { completed: true } },
+            },
           },
         },
-      },
-      orderBy: { updatedAt: "desc" },
-    }),
-    prisma.task.findMany({
-      where: { project: { ownerId: userId } },
-      include: {
-        project: { select: { id: true, name: true, color: true } },
-        subtasks: { select: { completed: true } },
-      },
-      orderBy: { updatedAt: "desc" },
-    }),
-    prisma.activityLog.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-      take: 30,
-    }),
-  ]);
+        orderBy: { updatedAt: "desc" },
+      }),
+      prisma.task.findMany({
+        where: { project: { ownerId: userId } },
+        include: {
+          project: { select: { id: true, name: true, color: true } },
+          subtasks: { select: { completed: true } },
+        },
+        orderBy: { updatedAt: "desc" },
+      }),
+      prisma.activityLog.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 30,
+      }),
+    ]);
+  } catch (err) {
+    const message = err instanceof Error ? `${err.name}: ${err.message}\n${err.stack}` : String(err);
+    logger.error({ err, userId }, "Dashboard data query failed");
+    console.error("getDashboardData: Prisma query error:", message);
+    throw new Error(`Erreur de chargement des données — ${err instanceof Error ? err.message : String(err)}`);
+  }
 
   const now = new Date();
 

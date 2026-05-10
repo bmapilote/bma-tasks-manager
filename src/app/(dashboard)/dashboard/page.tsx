@@ -6,6 +6,7 @@ import { ProjectProgress } from "@/components/dashboard/project-progress";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { Charts } from "@/components/dashboard/charts";
 import { DashboardFilters } from "@/components/dashboard/dashboard-filters";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,15 @@ type Props = {
 };
 
 export default async function DashboardPage({ searchParams }: Props) {
-  const user = await requireUser();
+  let user;
+  try {
+    user = await requireUser();
+  } catch (err) {
+    const message = err instanceof Error ? `${err.name}: ${err.message}\n${err.stack}` : String(err);
+    logger.error({ err }, "Dashboard requireUser failed");
+    console.error("Dashboard auth error:", message);
+    throw err;
+  }
 
   const params = await searchParams;
   const filters = {
@@ -24,14 +33,23 @@ export default async function DashboardPage({ searchParams }: Props) {
     search: params?.search,
   };
 
-  const [data, projectNames] = await Promise.all([
-    getDashboardData(user.id, filters),
-    prisma.project.findMany({
-      where: { ownerId: user.id },
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    }),
-  ]);
+  let data;
+  let projectNames;
+  try {
+    [data, projectNames] = await Promise.all([
+      getDashboardData(user.id, filters),
+      prisma.project.findMany({
+        where: { ownerId: user.id },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      }),
+    ]);
+  } catch (err) {
+    const message = err instanceof Error ? `${err.name}: ${err.message}\n${err.stack}` : String(err);
+    logger.error({ err, userId: user.id }, "Dashboard data fetch failed");
+    console.error("Dashboard data fetch error:", message);
+    throw new Error("Erreur lors du chargement des données du tableau de bord");
+  }
 
   return (
     <div className="space-y-6 animate-in">

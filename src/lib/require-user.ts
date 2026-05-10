@@ -14,9 +14,11 @@ export async function requireUser() {
   const { data: { user: authUser }, error } = await supabase.auth.getUser();
 
   if (error) {
+    console.error("requireUser: Supabase auth error:", error.message);
     throw new Error(`Auth error: ${error.message}`);
   }
   if (!authUser?.email) {
+    console.error("requireUser: No email in auth user");
     throw new Error("Non authentifié");
   }
 
@@ -49,6 +51,7 @@ export async function requireUser() {
     return dbUser;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    console.error("requireUser: Prisma error:", message, err instanceof Error ? err.stack : "");
     throw new Error(`Erreur base de données — ${message}`);
   }
 }
