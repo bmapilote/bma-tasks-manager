@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ProjectCard } from "@/components/projects/project-card";
 import { ProjectForm } from "@/components/projects/project-form";
 import { Plus } from "lucide-react";
+import { isAdmin } from "@/lib/rbac";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,7 @@ export default async function ProjectsPage() {
   const user = await requireUser();
 
   const projects = await prisma.project.findMany({
-    where: { ownerId: user.id },
+    where: isAdmin(user.role) ? {} : { ownerId: user.id },
     orderBy: { updatedAt: "desc" },
     include: { _count: { select: { tasks: true } } },
   });
@@ -50,6 +51,9 @@ export default async function ProjectsPage() {
                 name: p.name,
                 description: p.description,
                 color: p.color,
+                status: p.status,
+                progress: p.progress,
+                deadline: p.deadline?.toISOString() ?? null,
                 ownerId: p.ownerId,
                 createdAt: p.createdAt.toISOString(),
                 updatedAt: p.updatedAt.toISOString(),

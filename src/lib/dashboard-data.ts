@@ -1,5 +1,7 @@
 import { prisma } from "./prisma";
 import { logger } from "./logger";
+import { isAdmin } from "./rbac";
+import type { Role } from "@/types";
 
 export type DashboardFilters = {
   projectId?: string;
@@ -15,6 +17,23 @@ export type DashboardData = {
   taskDistribution: { name: string; value: number; color: string }[];
   tasksPerProject: { name: string; tasks: number; color: string }[];
   productivityData: { date: string; completed: number }[];
+};
+
+export type AdminDashboardData = DashboardData & {
+  users: {
+    total: number;
+    active: number;
+    admins: number;
+    withTasks: number;
+  };
+  globalStats: {
+    totalUsers: number;
+    totalProjects: number;
+    totalTasks: number;
+    completionRate: number;
+    overdueCount: number;
+    avgTasksPerUser: number;
+  };
 };
 
 export type DashboardStats = {
@@ -50,56 +69,78 @@ export type SerializedActivity = {
   entityType: string;
   metadata: string | null;
   createdAt: string;
+  userName?: string;
 };
+
+type TaskWithRelations = Awaited<ReturnType<typeof getTasks>>[number];
+type ProjectWithRelations = Awaited<ReturnType<typeof getProjects>>[number];
+
+async function getProjects(userId: string, role: Role, filters?: DashboardFilters) {
+  const projectWhere: Record<string, unknown> = {};
+  if (!isAdmin(role)) {
+    projectWhere.ownerId = userId;
+  }
+  if (filters?.projectId) {
+    projectWhere.id = filters.projectId;
+  }
+  return prisma.project.findMany({
+    where: projectWhere,
+    include: {
+      _count: { select: { tasks: true } },
+      tasks: {
+        select: {
+          id: true,
+          status: true,
+          priority: true,
+          dueDate: true,
+          createdAt: true,
+          updatedAt: true,
+          subtasks: { select: { completed: true } },
+        },
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+}
+
+async function getTasks(userId: string, role: Role) {
+  const where: Record<string, unknown> = {};
+  if (!isAdmin(role)) {
+    where.project = { ownerId: userId };
+  }
+  return prisma.task.findMany({
+    where,
+    include: {
+      project: { select: { id: true, name: true, color: true } },
+      subtasks: { select: { completed: true } },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+}
 
 export async function getDashboardData(
   userId: string,
+  role: Role,
   filters?: DashboardFilters
 ): Promise<DashboardData> {
-  const projectWhere: Record<string, unknown> = { ownerId: userId };
-  if (filters?.projectId) {
-    projectWhere["id"] = filters.projectId;
-  }
-
   let projects, tasks, logs;
+
   try {
     [projects, tasks, logs] = await Promise.all([
-      prisma.project.findMany({
-        where: projectWhere,
-        include: {
-          _count: { select: { tasks: true } },
-          tasks: {
-            select: {
-              id: true,
-              status: true,
-              priority: true,
-              dueDate: true,
-              createdAt: true,
-              updatedAt: true,
-              subtasks: { select: { completed: true } },
-            },
-          },
-        },
-        orderBy: { updatedAt: "desc" },
-      }),
-      prisma.task.findMany({
-        where: { project: { ownerId: userId } },
-        include: {
-          project: { select: { id: true, name: true, color: true } },
-          subtasks: { select: { completed: true } },
-        },
-        orderBy: { updatedAt: "desc" },
-      }),
+      getProjects(userId, role, filters),
+      getTasks(userId, role),
       prisma.activityLog.findMany({
-        where: { userId },
+        where: isAdmin(role) ? {} : { userId },
         orderBy: { createdAt: "desc" },
         take: 30,
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+        },
       }),
     ]);
   } catch (err) {
     const message = err instanceof Error ? `${err.name}: ${err.message}\n${err.stack}` : String(err);
     logger.error({ err, userId }, "Dashboard data query failed");
-    console.error("getDashboardData: Prisma query error:", message);
     throw new Error(`Erreur de chargement des données — ${err instanceof Error ? err.message : String(err)}`);
   }
 
@@ -165,7 +206,7 @@ export async function getDashboardData(
         inProgressTasks: pInProgress,
         overdueTasks: pOverdue,
         progress,
-        dueDate: null,
+        dueDate: p.deadline?.toISOString() ?? null,
         priority: p.tasks.some((t) => t.priority === "URGENT")
           ? "URGENT"
           : p.tasks.some((t) => t.priority === "HIGH")
@@ -173,12 +214,7 @@ export async function getDashboardData(
           : p.tasks.some((t) => t.priority === "MEDIUM")
           ? "MEDIUM"
           : "LOW",
-        status:
-          pCompleted === p.tasks.length && p.tasks.length > 0
-            ? "DONE"
-            : p.tasks.length === 0
-            ? "EMPTY"
-            : "ACTIVE",
+        status: p.status,
       };
     }
   );
@@ -239,6 +275,7 @@ export async function getDashboardData(
     entityType: l.entityType,
     metadata: l.metadata,
     createdAt: l.createdAt.toISOString(),
+    userName: l.user.name ?? l.user.email,
   }));
 
   return {
@@ -257,5 +294,55 @@ export async function getDashboardData(
     taskDistribution,
     tasksPerProject,
     productivityData,
+  };
+}
+
+export async function getAdminDashboardData(
+  userId: string,
+  role: Role,
+  filters?: DashboardFilters
+): Promise<AdminDashboardData> {
+  const base = await getDashboardData(userId, role, filters);
+
+  const [users, tasks, allProjects] = await Promise.all([
+    prisma.user.findMany({
+      select: {
+        id: true,
+        isActive: true,
+        role: true,
+        _count: { select: { assignedTasks: true } },
+      },
+    }),
+    prisma.task.count(),
+    prisma.project.count(),
+  ]);
+
+  const activeUsers = users.filter((u) => u.isActive).length;
+  const adminCount = users.filter((u) => u.role === "ADMIN").length;
+  const usersWithTasks = users.filter((u) => u._count.assignedTasks > 0).length;
+
+  const completedCount = base.stats.completedTasks;
+  const completionRate = base.stats.totalTasks > 0
+    ? Math.round((completedCount / base.stats.totalTasks) * 100)
+    : 0;
+
+  return {
+    ...base,
+    users: {
+      total: users.length,
+      active: activeUsers,
+      admins: adminCount,
+      withTasks: usersWithTasks,
+    },
+    globalStats: {
+      totalUsers: users.length,
+      totalProjects: allProjects,
+      totalTasks: base.stats.totalTasks,
+      completionRate,
+      overdueCount: base.stats.overdueTasks,
+      avgTasksPerUser: users.length > 0
+        ? Math.round((allProjects > 0 ? base.stats.totalTasks : 0) / users.length)
+        : 0,
+    },
   };
 }

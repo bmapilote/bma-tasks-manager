@@ -6,9 +6,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { logger } from "@/lib/logger";
 import { logActivity } from "@/lib/activity-log";
+import { isAdmin } from "@/lib/rbac";
 
 export async function createProject(formData: FormData) {
-  const { id: userId } = await requireUser();
+  const user = await requireUser();
 
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
@@ -23,12 +24,12 @@ export async function createProject(formData: FormData) {
       name: name.trim(),
       description: description || null,
       color: color || null,
-      ownerId: userId,
+      ownerId: user.id,
     },
   });
 
   logger.info({ projectId: project.id }, "project:created");
-  await logActivity(userId, "project:created", project.id, "project", {
+  await logActivity(user.id, "project:created", project.id, "project", {
     title: project.name,
   });
   revalidatePath("/projects");
@@ -37,37 +38,44 @@ export async function createProject(formData: FormData) {
 }
 
 export async function updateProject(id: string, formData: FormData) {
-  const { id: userId } = await requireUser();
+  const user = await requireUser();
 
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
   const color = formData.get("color") as string;
+  const status = formData.get("status") as string;
+  const deadline = formData.get("deadline") as string;
 
   const project = await prisma.project.findUnique({ where: { id } });
-  if (!project || project.ownerId !== userId) {
+  if (!project || (project.ownerId !== user.id && !isAdmin(user.role))) {
     return { error: "Projet introuvable ou accès refusé" };
   }
 
+  const data: Record<string, unknown> = { updatedAt: new Date() };
+  if (name?.trim()) data.name = name.trim();
+  if (description !== undefined) data.description = description || null;
+  if (color !== undefined) data.color = color || null;
+  if (status) data.status = status;
+  if (deadline !== undefined) data.deadline = deadline ? new Date(deadline) : null;
+
   await prisma.project.update({
     where: { id },
-    data: {
-      name: name.trim() || project.name,
-      description: description !== undefined ? (description || null) : project.description,
-      color: color !== undefined ? (color || null) : project.color,
-      updatedAt: new Date(),
-    },
+    data,
   });
 
   logger.info({ projectId: id }, "project:updated");
+  await logActivity(user.id, "project:updated", id, "project", {
+    title: project.name,
+  });
   revalidatePath(`/projects/${id}`);
   revalidatePath("/projects");
 }
 
 export async function deleteProject(id: string): Promise<void> {
-  const { id: userId } = await requireUser();
+  const user = await requireUser();
 
   const project = await prisma.project.findUnique({ where: { id } });
-  if (!project || project.ownerId !== userId) {
+  if (!project || (project.ownerId !== user.id && !isAdmin(user.role))) {
     logger.warn({ projectId: id }, "project:delete_unauthorized");
     return;
   }
@@ -75,7 +83,7 @@ export async function deleteProject(id: string): Promise<void> {
   await prisma.project.delete({ where: { id } });
 
   logger.info({ projectId: id }, "project:deleted");
-  await logActivity(userId, "project:deleted", id, "project", {
+  await logActivity(user.id, "project:deleted", id, "project", {
     title: project.name,
   });
   revalidatePath("/projects");

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { formatDate } from "@/lib/utils";
 import { Calendar, FolderKanban } from "lucide-react";
 import { TaskStatus, TaskPriority } from "@/types";
+import { isAdmin } from "@/lib/rbac";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,10 @@ export default async function TasksPage({ searchParams }: Props) {
   const user = await requireUser();
   const { status, priority } = await searchParams;
 
-  const where: Record<string, unknown> = { project: { ownerId: user.id } };
+  const where: Record<string, unknown> = {};
+  if (!isAdmin(user.role)) {
+    where.project = { ownerId: user.id };
+  }
   if (status && Object.values(TaskStatus).includes(status as TaskStatus)) {
     where.status = status;
   }

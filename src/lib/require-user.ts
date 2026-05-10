@@ -1,8 +1,20 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { prisma } from "./prisma";
+import { isAdmin } from "./rbac";
+import type { Role } from "@/types";
 
-export async function requireUser() {
+export type AuthenticatedUser = {
+  id: string;
+  supabaseId: string | null;
+  name: string | null;
+  email: string;
+  avatarUrl: string | null;
+  role: Role;
+  isActive: boolean;
+};
+
+export async function requireUser(): Promise<AuthenticatedUser> {
   let cookieStore: Awaited<ReturnType<typeof cookies>>;
   try {
     cookieStore = await cookies();
@@ -14,11 +26,9 @@ export async function requireUser() {
   const { data: { user: authUser }, error } = await supabase.auth.getUser();
 
   if (error) {
-    console.error("requireUser: Supabase auth error:", error.message);
     throw new Error(`Auth error: ${error.message}`);
   }
   if (!authUser?.email) {
-    console.error("requireUser: No email in auth user");
     throw new Error("Non authentifié");
   }
 
@@ -26,13 +36,21 @@ export async function requireUser() {
     let dbUser = await prisma.user.findFirst({
       where: { supabaseId: authUser.id },
     });
-    if (dbUser) return dbUser;
+    if (dbUser) {
+      if (!dbUser.isActive) {
+        throw new Error("Compte désactivé — contactez un administrateur");
+      }
+      return dbUser;
+    }
 
     dbUser = await prisma.user.findUnique({
       where: { email: authUser.email },
     });
 
     if (dbUser) {
+      if (!dbUser.isActive) {
+        throw new Error("Compte désactivé — contactez un administrateur");
+      }
       dbUser = await prisma.user.update({
         where: { id: dbUser.id },
         data: { supabaseId: authUser.id },
@@ -45,13 +63,21 @@ export async function requireUser() {
         supabaseId: authUser.id,
         email: authUser.email,
         name: authUser.user_metadata?.name as string | undefined,
+        role: "USER",
       },
     });
 
     return dbUser;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error("requireUser: Prisma error:", message, err instanceof Error ? err.stack : "");
     throw new Error(`Erreur base de données — ${message}`);
   }
+}
+
+export async function requireAdmin(): Promise<AuthenticatedUser> {
+  const user = await requireUser();
+  if (!isAdmin(user.role)) {
+    throw new Error("Accès refusé — droits administrateur requis");
+  }
+  return user;
 }

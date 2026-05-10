@@ -6,9 +6,10 @@ import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
 import { TaskStatus, TaskPriority } from "@/types";
 import { logActivity } from "@/lib/activity-log";
+import { can, isAdmin } from "@/lib/rbac";
 
 export async function createTask(formData: FormData) {
-  const { id: userId } = await requireUser();
+  const user = await requireUser();
 
   const projectId = formData.get("projectId") as string;
   const title = formData.get("title") as string;
@@ -22,14 +23,21 @@ export async function createTask(formData: FormData) {
   }
 
   const project = await prisma.project.findUnique({ where: { id: projectId } });
-  if (!project || project.ownerId !== userId) {
-    return { error: "Projet introuvable ou accès refusé" };
+  if (!project) {
+    return { error: "Projet introuvable" };
+  }
+  if (project.ownerId !== user.id && !isAdmin(user.role)) {
+    return { error: "Accès refusé" };
   }
 
   const maxPosition = await prisma.task.aggregate({
     where: { projectId, status: "TODO" },
     _max: { position: true },
   });
+
+  const assignedTo = assigneeId || null;
+  const hasAssignPermission = can(user.role, "tasks:assign");
+  const finalAssignee = assignedTo && hasAssignPermission ? assignedTo : null;
 
   const task = await prisma.task.create({
     data: {
@@ -40,29 +48,42 @@ export async function createTask(formData: FormData) {
       dueDate: dueDate ? new Date(dueDate) : null,
       position: (maxPosition._max.position ?? -1) + 1,
       projectId,
-      assigneeId: assigneeId || null,
+      assigneeId: finalAssignee,
+      assignedById: finalAssignee ? user.id : null,
     },
   });
 
   logger.info({ taskId: task.id, projectId }, "task:created");
-  await logActivity(userId, "task:created", task.id, "task", {
+  await logActivity(user.id, "task:created", task.id, "task", {
     title: task.title,
     projectName: project.name,
     projectId,
   });
+
+  if (finalAssignee) {
+    await logActivity(user.id, "task:assigned", task.id, "task", {
+      title: task.title,
+      assigneeId: finalAssignee,
+      projectId,
+    });
+  }
+
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/tasks");
 }
 
 export async function updateTask(id: string, formData: FormData) {
-  const { id: userId } = await requireUser();
+  const user = await requireUser();
 
   const task = await prisma.task.findUnique({
     where: { id },
     include: { project: true },
   });
-  if (!task || task.project.ownerId !== userId) {
-    return { error: "Tâche introuvable ou accès refusé" };
+  if (!task) {
+    return { error: "Tâche introuvable" };
+  }
+  if (task.project.ownerId !== user.id && !isAdmin(user.role)) {
+    return { error: "Accès refusé" };
   }
 
   const title = formData.get("title") as string;
@@ -72,38 +93,80 @@ export async function updateTask(id: string, formData: FormData) {
   const dueDate = formData.get("dueDate") as string;
   const assigneeId = formData.get("assigneeId") as string;
 
+  const updateData: Record<string, unknown> = {
+    updatedAt: new Date(),
+  };
+
+  if (title) updateData.title = title;
+  if (description !== undefined) updateData.description = description || null;
+  if (status && Object.values(TaskStatus).includes(status)) updateData.status = status;
+  if (priority && Object.values(TaskPriority).includes(priority)) updateData.priority = priority;
+  if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
+  if (assigneeId !== undefined) {
+    const hasAssignPermission = can(user.role, "tasks:assign");
+    if (hasAssignPermission) {
+      updateData.assigneeId = assigneeId || null;
+      if (assigneeId) {
+        updateData.assignedById = user.id;
+      }
+    }
+  }
+  if (status === "DONE") {
+    updateData.completedAt = new Date();
+  } else if (task.status === "DONE") {
+    updateData.completedAt = null;
+  }
+
+  const changedPriority = priority && priority !== task.priority;
+  const changedAssignee = assigneeId !== undefined && assigneeId !== task.assigneeId;
+
   await prisma.task.update({
     where: { id },
-    data: {
-      title: title || undefined,
-      description: description !== undefined ? (description || null) : undefined,
-      status: status && Object.values(TaskStatus).includes(status) ? status : undefined,
-      priority: priority && Object.values(TaskPriority).includes(priority) ? priority : undefined,
-      dueDate: dueDate !== undefined ? (dueDate ? new Date(dueDate) : null) : undefined,
-      assigneeId: assigneeId !== undefined ? (assigneeId || null) : undefined,
-      updatedAt: new Date(),
-    },
+    data: updateData,
   });
 
   logger.info({ taskId: id }, "task:updated");
-  await logActivity(userId, "task:updated", id, "task", {
+  await logActivity(user.id, "task:updated", id, "task", {
     title: task.title,
     projectName: task.project.name,
     projectId: task.projectId,
   });
+
+  if (changedPriority) {
+    await logActivity(user.id, "task:priority_changed", id, "task", {
+      title: task.title,
+      from: task.priority,
+      to: priority,
+    });
+  }
+
+  if (changedAssignee && assigneeId) {
+    const action = task.assigneeId ? "task:reassigned" : "task:assigned";
+    await logActivity(user.id, action, id, "task", {
+      title: task.title,
+      assigneeId,
+      previousAssigneeId: task.assigneeId,
+    });
+  }
+
   revalidatePath(`/projects/${task.projectId}`);
   revalidatePath("/tasks");
 }
 
 export async function updateTaskStatus(id: string, status: TaskStatus) {
-  const { id: userId } = await requireUser();
+  const user = await requireUser();
 
   const task = await prisma.task.findUnique({
     where: { id },
     include: { project: true },
   });
-  if (!task || task.project.ownerId !== userId) {
-    return { error: "Tâche introuvable ou accès refusé" };
+  if (!task) {
+    return { error: "Tâche introuvable" };
+  }
+  const isOwner = task.project.ownerId === user.id;
+  const isAssignee = task.assigneeId === user.id;
+  if (!isOwner && !isAssignee && !can(user.role, "tasks:change_status")) {
+    return { error: "Accès refusé" };
   }
 
   if (!Object.values(TaskStatus).includes(status)) {
@@ -121,11 +184,12 @@ export async function updateTaskStatus(id: string, status: TaskStatus) {
       status,
       position: (maxPosition._max.position ?? -1) + 1,
       updatedAt: new Date(),
+      completedAt: status === "DONE" ? new Date() : null,
     },
   });
 
   if (status === "DONE") {
-    await logActivity(userId, "task:completed", id, "task", {
+    await logActivity(user.id, "task:completed", id, "task", {
       title: task.title,
       projectName: task.project.name,
       projectId: task.projectId,
@@ -136,13 +200,13 @@ export async function updateTaskStatus(id: string, status: TaskStatus) {
 }
 
 export async function deleteTask(id: string): Promise<void> {
-  const { id: userId } = await requireUser();
+  const user = await requireUser();
 
   const task = await prisma.task.findUnique({
     where: { id },
     include: { project: true },
   });
-  if (!task || task.project.ownerId !== userId) {
+  if (!task || (task.project.ownerId !== user.id && !isAdmin(user.role))) {
     logger.warn({ taskId: id }, "task:delete_unauthorized");
     return;
   }
@@ -150,7 +214,7 @@ export async function deleteTask(id: string): Promise<void> {
   await prisma.task.delete({ where: { id } });
 
   logger.info({ taskId: id }, "task:deleted");
-  await logActivity(userId, "task:deleted", id, "task", {
+  await logActivity(user.id, "task:deleted", id, "task", {
     title: task.title,
     projectName: task.project.name,
     projectId: task.projectId,

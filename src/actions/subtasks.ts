@@ -5,9 +5,10 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
 import { logActivity } from "@/lib/activity-log";
+import { isAdmin } from "@/lib/rbac";
 
 export async function createSubTask(formData: FormData) {
-  const { id: userId } = await requireUser();
+  const user = await requireUser();
 
   const taskId = formData.get("taskId") as string;
   const title = formData.get("title") as string;
@@ -20,7 +21,7 @@ export async function createSubTask(formData: FormData) {
     where: { id: taskId },
     include: { project: true },
   });
-  if (!task || task.project.ownerId !== userId) {
+  if (!task || (task.project.ownerId !== user.id && !isAdmin(user.role))) {
     return { error: "Tâche introuvable ou accès refusé" };
   }
 
@@ -32,7 +33,7 @@ export async function createSubTask(formData: FormData) {
   });
 
   logger.info({ taskId }, "subtask:created");
-  await logActivity(userId, "subtask:added", taskId, "subtask", {
+  await logActivity(user.id, "subtask:added", taskId, "subtask", {
     title: title.trim(),
     projectId: task.projectId,
   });
@@ -40,13 +41,13 @@ export async function createSubTask(formData: FormData) {
 }
 
 export async function updateSubTask(id: string, formData: FormData) {
-  const { id: userId } = await requireUser();
+  const user = await requireUser();
 
   const subTask = await prisma.subTask.findUnique({
     where: { id },
     include: { task: { include: { project: true } } },
   });
-  if (!subTask || subTask.task.project.ownerId !== userId) {
+  if (!subTask || (subTask.task.project.ownerId !== user.id && !isAdmin(user.role))) {
     return { error: "Sous-tâche introuvable ou accès refusé" };
   }
 
@@ -68,13 +69,13 @@ export async function updateSubTask(id: string, formData: FormData) {
 }
 
 export async function toggleSubTask(id: string) {
-  const { id: userId } = await requireUser();
+  const user = await requireUser();
 
   const subTask = await prisma.subTask.findUnique({
     where: { id },
     include: { task: { include: { project: true } } },
   });
-  if (!subTask || subTask.task.project.ownerId !== userId) {
+  if (!subTask || (subTask.task.project.ownerId !== user.id && !isAdmin(user.role))) {
     return { error: "Sous-tâche introuvable ou accès refusé" };
   }
 
@@ -92,7 +93,7 @@ export async function toggleSubTask(id: string) {
   if (allSubtasks.every((s) => s.completed)) {
     await prisma.task.update({
       where: { id: subTask.taskId },
-      data: { status: "DONE", updatedAt: new Date() },
+      data: { status: "DONE", completedAt: new Date(), updatedAt: new Date() },
     });
   }
 
@@ -101,13 +102,13 @@ export async function toggleSubTask(id: string) {
 }
 
 export async function deleteSubTask(id: string): Promise<void> {
-  const { id: userId } = await requireUser();
+  const user = await requireUser();
 
   const subTask = await prisma.subTask.findUnique({
     where: { id },
     include: { task: { include: { project: true } } },
   });
-  if (!subTask || subTask.task.project.ownerId !== userId) {
+  if (!subTask || (subTask.task.project.ownerId !== user.id && !isAdmin(user.role))) {
     logger.warn({ subTaskId: id }, "subtask:delete_unauthorized");
     return;
   }

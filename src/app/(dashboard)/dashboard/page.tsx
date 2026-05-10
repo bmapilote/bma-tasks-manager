@@ -7,6 +7,7 @@ import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { Charts } from "@/components/dashboard/charts";
 import { DashboardFilters } from "@/components/dashboard/dashboard-filters";
 import { logger } from "@/lib/logger";
+import { isAdmin } from "@/lib/rbac";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,6 @@ export default async function DashboardPage({ searchParams }: Props) {
   } catch (err) {
     const message = err instanceof Error ? `${err.name}: ${err.message}\n${err.stack}` : String(err);
     logger.error({ err }, "Dashboard requireUser failed");
-    console.error("Dashboard auth error:", message);
     throw err;
   }
 
@@ -37,9 +37,9 @@ export default async function DashboardPage({ searchParams }: Props) {
   let projectNames;
   try {
     [data, projectNames] = await Promise.all([
-      getDashboardData(user.id, filters),
+      getDashboardData(user.id, user.role, filters),
       prisma.project.findMany({
-        where: { ownerId: user.id },
+        where: isAdmin(user.role) ? {} : { ownerId: user.id },
         select: { id: true, name: true },
         orderBy: { name: "asc" },
       }),
@@ -47,7 +47,6 @@ export default async function DashboardPage({ searchParams }: Props) {
   } catch (err) {
     const message = err instanceof Error ? `${err.name}: ${err.message}\n${err.stack}` : String(err);
     logger.error({ err, userId: user.id }, "Dashboard data fetch failed");
-    console.error("Dashboard data fetch error:", message);
     throw new Error("Erreur lors du chargement des données du tableau de bord");
   }
 

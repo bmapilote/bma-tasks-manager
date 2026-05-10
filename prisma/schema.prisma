@@ -7,16 +7,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  USER
+}
+
 model User {
   id             String    @id @default(cuid())
   supabaseId     String?   @unique
   name           String?
   email          String    @unique
   avatarUrl      String?
+  role           Role      @default(USER)
+  department     String?
+  jobTitle       String?
+  isActive       Boolean   @default(true)
+  lastLoginAt    DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @default(now())
   projects       Project[]
-  assignedTasks  Task[]
+  assignedTasks  Task[]    @relation("TaskAssignee")
+  createdTasks   Task[]    @relation("TaskCreator")
+  activityLogs   ActivityLog[]
+
+  @@map("User")
 }
 
 model Project {
@@ -24,28 +38,39 @@ model Project {
   name        String
   description String?
   color       String?
+  status      String   @default("ACTIVE")
+  progress    Int      @default(0)
+  deadline    DateTime?
   ownerId     String
   owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now())
   tasks       Task[]
+
+  @@map("Project")
 }
 
 model Task {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  status      String    @default("TODO")
-  priority    String    @default("MEDIUM")
-  dueDate     DateTime?
-  position    Int       @default(0)
-  projectId   String
-  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  assigneeId  String?
-  assignee    User?     @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @default(now())
-  subtasks    SubTask[]
+  id             String    @id @default(cuid())
+  title          String
+  description    String?
+  status         String    @default("TODO")
+  priority       String    @default("MEDIUM")
+  dueDate        DateTime?
+  completedAt    DateTime?
+  estimatedHours Float?
+  position       Int       @default(0)
+  projectId      String
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assigneeId     String?
+  assignee       User?     @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  assignedById   String?
+  assignedBy     User?     @relation("TaskCreator", fields: [assignedById], references: [id])
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now())
+  subtasks       SubTask[]
+
+  @@map("Task")
 }
 
 model SubTask {
@@ -56,14 +81,19 @@ model SubTask {
   task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
+
+  @@map("SubTask")
 }
 
 model ActivityLog {
   id         String   @id @default(cuid())
   userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   action     String
   entityId   String?
   entityType String
   metadata   String?
   createdAt  DateTime @default(now())
+
+  @@map("ActivityLog")
 }

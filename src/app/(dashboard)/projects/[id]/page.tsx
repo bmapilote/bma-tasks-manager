@@ -6,6 +6,7 @@ import { KanbanBoard } from "@/components/tasks/kanban-board";
 import Link from "next/link";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { deleteProject } from "@/actions/projects";
+import { isAdmin } from "@/lib/rbac";
 import type { TaskStatus, TaskPriority, SerializedSubTask } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,7 @@ export default async function ProjectDetailPage({ params }: Props) {
       tasks: {
         include: {
           assignee: { select: { id: true, name: true, email: true } },
+          assignedBy: { select: { id: true, name: true, email: true } },
           subtasks: { orderBy: { createdAt: "asc" } },
         },
         orderBy: { position: "asc" },
@@ -31,7 +33,7 @@ export default async function ProjectDetailPage({ params }: Props) {
     },
   });
 
-  if (!project || project.ownerId !== user.id) {
+  if (!project || (project.ownerId !== user.id && !isAdmin(user.role))) {
     notFound();
   }
 
@@ -78,6 +80,10 @@ export default async function ProjectDetailPage({ params }: Props) {
           status: t.status as TaskStatus,
           priority: t.priority as TaskPriority,
           dueDate: t.dueDate?.toISOString() ?? null,
+          completedAt: t.completedAt?.toISOString() ?? null,
+          estimatedHours: t.estimatedHours,
+          assignedById: t.assignedById,
+          assignedBy: t.assignedBy ? { id: t.assignedBy.id, name: t.assignedBy.name, email: t.assignedBy.email } : null,
           createdAt: t.createdAt.toISOString(),
           updatedAt: t.updatedAt.toISOString(),
           subtasks: t.subtasks.map((st) => ({
