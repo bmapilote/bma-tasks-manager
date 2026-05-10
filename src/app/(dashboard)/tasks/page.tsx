@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
 import { Calendar, FolderKanban } from "lucide-react";
@@ -29,9 +30,12 @@ export default async function TasksPage({ searchParams }: Props) {
   const user = await requireUser();
   const { status, priority } = await searchParams;
 
-  const where: Record<string, unknown> = {};
+  const where: Prisma.TaskWhereInput = {};
   if (!isAdmin(user.role)) {
-    where.project = { ownerId: user.id };
+    where.OR = [
+      { project: { ownerId: user.id } },
+      { assigneeId: user.id },
+    ];
   }
   if (status && Object.values(TaskStatus).includes(status as TaskStatus)) {
     where.status = status;

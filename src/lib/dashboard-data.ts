@@ -106,7 +106,10 @@ async function getProjects(userId: string, role: Role, filters?: DashboardFilter
 async function getTasks(userId: string, role: Role) {
   const where: Record<string, unknown> = {};
   if (!isAdmin(role)) {
-    where.project = { ownerId: userId };
+    where.OR = [
+      { project: { ownerId: userId } },
+      { assigneeId: userId },
+    ];
   }
   return prisma.task.findMany({
     where,

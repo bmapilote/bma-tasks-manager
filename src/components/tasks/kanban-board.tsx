@@ -12,12 +12,19 @@ const columns: { id: TaskStatus; label: string }[] = [
   { id: "DONE", label: "Terminé" },
 ];
 
+type UserOption = {
+  id: string;
+  name: string | null;
+  email: string;
+};
+
 type Props = {
   tasks: SerializedTask[];
   projectId: string;
+  users: UserOption[];
 };
 
-export function KanbanBoard({ tasks, projectId }: Props) {
+export function KanbanBoard({ tasks, projectId, users }: Props) {
   const [dropTarget, setDropTarget] = useState<string | null>(null);
 
   function getTasksByStatus(status: TaskStatus) {
@@ -66,7 +73,7 @@ export function KanbanBoard({ tasks, projectId }: Props) {
 
             <div className="space-y-2 min-h-[100px]">
               {columnTasks.map((task) => (
-                <TaskCard key={task.id} task={task} />
+                <TaskCard key={task.id} task={task} users={users} />
               ))}
               {columnTasks.length === 0 && (
                 <p className="py-8 text-center text-xs text-gray-400">

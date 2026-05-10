@@ -4,11 +4,18 @@ import { useActionState } from "react";
 import { createTask } from "@/actions/tasks";
 import { Loader2, Plus } from "lucide-react";
 
-type Props = {
-  projectId: string;
+type UserOption = {
+  id: string;
+  name: string | null;
+  email: string;
 };
 
-export function TaskForm({ projectId }: Props) {
+type Props = {
+  projectId: string;
+  users: UserOption[];
+};
+
+export function TaskForm({ projectId, users }: Props) {
   const [state, formAction, isPending] = useActionState<{ error: string } | undefined, FormData>(
     async (_prev, formData) => createTask(formData),
     undefined
@@ -45,7 +52,7 @@ export function TaskForm({ projectId }: Props) {
         />
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <select
           name="priority"
           defaultValue="MEDIUM"
@@ -62,6 +69,18 @@ export function TaskForm({ projectId }: Props) {
           type="date"
           className="block rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
+
+        <select
+          name="assigneeId"
+          className="block min-w-[160px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        >
+          <option value="">Non assignée</option>
+          {users.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.name || u.email}
+            </option>
+          ))}
+        </select>
       </div>
 
       <button

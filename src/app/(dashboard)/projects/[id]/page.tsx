@@ -19,23 +19,36 @@ export default async function ProjectDetailPage({ params }: Props) {
   const user = await requireUser();
   const { id } = await params;
 
-  const project = await prisma.project.findUnique({
-    where: { id },
-    include: {
-      tasks: {
-        include: {
-          assignee: { select: { id: true, name: true, email: true } },
-          assignedBy: { select: { id: true, name: true, email: true } },
-          subtasks: { orderBy: { createdAt: "asc" } },
+  const [project, users] = await Promise.all([
+    prisma.project.findUnique({
+      where: { id },
+      include: {
+        tasks: {
+          include: {
+            assignee: { select: { id: true, name: true, email: true } },
+            assignedBy: { select: { id: true, name: true, email: true } },
+            subtasks: { orderBy: { createdAt: "asc" } },
+          },
+          orderBy: { position: "asc" },
         },
-        orderBy: { position: "asc" },
       },
-    },
-  });
+    }),
+    prisma.user.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, email: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
-  if (!project || (project.ownerId !== user.id && !isAdmin(user.role))) {
-    notFound();
+  if (!project) notFound();
+
+  const isOwner = project.ownerId === user.id;
+  if (!isOwner && !isAdmin(user.role)) {
+    const hasAssignedTask = project.tasks.some((t) => t.assigneeId === user.id);
+    if (!hasAssignedTask) notFound();
   }
+
+  const canEdit = isOwner || isAdmin(user.role);
 
   return (
     <div className="space-y-6">
@@ -61,18 +74,20 @@ export default async function ProjectDetailPage({ params }: Props) {
           </div>
         </div>
 
-        <form action={deleteProject.bind(null, id)}>
-          <button
-            type="submit"
-            className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-          >
-            <Trash2 className="h-4 w-4" />
-            Supprimer
-          </button>
-        </form>
+        {canEdit && (
+          <form action={deleteProject.bind(null, id)}>
+            <button
+              type="submit"
+              className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              Supprimer
+            </button>
+          </form>
+        )}
       </div>
 
-      <TaskForm projectId={id} />
+      {canEdit && <TaskForm projectId={id} users={users} />}
 
       <KanbanBoard
         tasks={project.tasks.map((t) => ({
@@ -93,6 +108,7 @@ export default async function ProjectDetailPage({ params }: Props) {
           })) as SerializedSubTask[],
         }))}
         projectId={id}
+        users={users}
       />
     </div>
   );

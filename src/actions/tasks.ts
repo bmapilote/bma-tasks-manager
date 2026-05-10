@@ -199,6 +199,48 @@ export async function updateTaskStatus(id: string, status: TaskStatus) {
   revalidatePath("/tasks");
 }
 
+export async function reassignTask(taskId: string, assigneeId: string | null) {
+  const user = await requireUser();
+
+  if (!can(user.role, "tasks:assign")) {
+    return { error: "Vous n'avez pas la permission d'assigner des tâches" };
+  }
+
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    include: { project: true, assignee: true },
+  });
+  if (!task) {
+    return { error: "Tâche introuvable" };
+  }
+  if (task.project.ownerId !== user.id && !isAdmin(user.role)) {
+    return { error: "Accès refusé" };
+  }
+
+  const previousAssigneeId = task.assigneeId;
+
+  await prisma.task.update({
+    where: { id: taskId },
+    data: {
+      assigneeId: assigneeId || null,
+      assignedById: assigneeId ? user.id : null,
+      updatedAt: new Date(),
+    },
+  });
+
+  const action = previousAssigneeId ? "task:reassigned" : "task:assigned";
+  await logActivity(user.id, action, taskId, "task", {
+    title: task.title,
+    assigneeId,
+    previousAssigneeId,
+    projectId: task.projectId,
+  });
+
+  logger.info({ taskId, assigneeId, previousAssigneeId }, action);
+  revalidatePath(`/projects/${task.projectId}`);
+  revalidatePath("/tasks");
+}
+
 export async function deleteTask(id: string): Promise<void> {
   const user = await requireUser();
 
