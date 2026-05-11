@@ -76,7 +76,7 @@ npx prisma studio                  # GUI data browser (via Supabase proxy)
 ## Netlify deployment
 
 ### netlify.toml
-- Located at project root — build command: `npx prisma migrate deploy && npx prisma generate && npm run build`
+- Located at project root — build command: `npx prisma db push && npx prisma generate && npm run build`
 - OpenNext adapter is auto-injected at build time (no `@netlify/plugin-nextjs` needed)
 - `proxy.ts` runs as an Edge Function automatically
 
