@@ -78,7 +78,10 @@ type ProjectWithRelations = Awaited<ReturnType<typeof getProjects>>[number];
 async function getProjects(userId: string, role: Role, filters?: DashboardFilters) {
   const projectWhere: Record<string, unknown> = {};
   if (!isAdmin(role)) {
-    projectWhere.ownerId = userId;
+    projectWhere.OR = [
+      { ownerId: userId },
+      { tasks: { some: { assigneeId: userId } } },
+    ];
   }
   if (filters?.projectId) {
     projectWhere.id = filters.projectId;

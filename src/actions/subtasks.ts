@@ -21,7 +21,11 @@ export async function createSubTask(formData: FormData) {
     where: { id: taskId },
     include: { project: true },
   });
-  if (!task || (task.project.ownerId !== user.id && !isAdmin(user.role))) {
+  if (!task) {
+    return { error: "Tâche introuvable ou accès refusé" };
+  }
+  const canManage = task.project.ownerId === user.id || task.assigneeId === user.id || isAdmin(user.role);
+  if (!canManage) {
     return { error: "Tâche introuvable ou accès refusé" };
   }
 
@@ -47,7 +51,11 @@ export async function updateSubTask(id: string, formData: FormData) {
     where: { id },
     include: { task: { include: { project: true } } },
   });
-  if (!subTask || (subTask.task.project.ownerId !== user.id && !isAdmin(user.role))) {
+  if (!subTask) {
+    return { error: "Sous-tâche introuvable ou accès refusé" };
+  }
+  const canManage = subTask.task.project.ownerId === user.id || subTask.task.assigneeId === user.id || isAdmin(user.role);
+  if (!canManage) {
     return { error: "Sous-tâche introuvable ou accès refusé" };
   }
 
@@ -75,7 +83,11 @@ export async function toggleSubTask(id: string) {
     where: { id },
     include: { task: { include: { project: true } } },
   });
-  if (!subTask || (subTask.task.project.ownerId !== user.id && !isAdmin(user.role))) {
+  if (!subTask) {
+    return { error: "Sous-tâche introuvable ou accès refusé" };
+  }
+  const canManage = subTask.task.project.ownerId === user.id || subTask.task.assigneeId === user.id || isAdmin(user.role);
+  if (!canManage) {
     return { error: "Sous-tâche introuvable ou accès refusé" };
   }
 
@@ -108,7 +120,12 @@ export async function deleteSubTask(id: string): Promise<void> {
     where: { id },
     include: { task: { include: { project: true } } },
   });
-  if (!subTask || (subTask.task.project.ownerId !== user.id && !isAdmin(user.role))) {
+  if (!subTask) {
+    logger.warn({ subTaskId: id }, "subtask:delete_unauthorized");
+    return;
+  }
+  const canManage = subTask.task.project.ownerId === user.id || subTask.task.assigneeId === user.id || isAdmin(user.role);
+  if (!canManage) {
     logger.warn({ subTaskId: id }, "subtask:delete_unauthorized");
     return;
   }

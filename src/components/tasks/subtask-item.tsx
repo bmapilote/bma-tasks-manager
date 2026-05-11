@@ -7,9 +7,10 @@ import type { SerializedSubTask } from "@/types";
 
 type Props = {
   subTask: SerializedSubTask;
+  isAssignee?: boolean;
 };
 
-export function SubTaskItem({ subTask }: Props) {
+export function SubTaskItem({ subTask, isAssignee = false }: Props) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(subTask.title);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -51,16 +52,28 @@ export function SubTaskItem({ subTask }: Props) {
 
   return (
     <div className="group flex items-center gap-2 py-1">
-      <button
-        onClick={handleToggle}
-        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-          subTask.completed
-            ? "border-green-500 bg-green-500 text-white"
-            : "border-gray-300 bg-white hover:border-gray-400"
-        }`}
-      >
-        {subTask.completed && <Check className="h-3 w-3" />}
-      </button>
+      {isAssignee ? (
+        <button
+          onClick={handleToggle}
+          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+            subTask.completed
+              ? "border-green-500 bg-green-500 text-white"
+              : "border-gray-300 bg-white hover:border-gray-400"
+          }`}
+        >
+          {subTask.completed && <Check className="h-3 w-3" />}
+        </button>
+      ) : (
+        <div
+          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+            subTask.completed
+              ? "border-green-500 bg-green-500 text-white"
+              : "border-gray-300 bg-white"
+          }`}
+        >
+          {subTask.completed && <Check className="h-3 w-3" />}
+        </div>
+      )}
 
       {editing ? (
         <input
@@ -82,7 +95,7 @@ export function SubTaskItem({ subTask }: Props) {
         </span>
       )}
 
-      {!editing && (
+      {!editing && isAssignee && (
         <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
           <button
             onClick={() => setEditing(true)}

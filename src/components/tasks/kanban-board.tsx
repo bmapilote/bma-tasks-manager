@@ -22,9 +22,11 @@ type Props = {
   tasks: SerializedTask[];
   projectId: string;
   users: UserOption[];
+  currentUserId: string;
+  canEdit: boolean;
 };
 
-export function KanbanBoard({ tasks, projectId, users }: Props) {
+export function KanbanBoard({ tasks, projectId, users, currentUserId, canEdit }: Props) {
   const [dropTarget, setDropTarget] = useState<string | null>(null);
 
   function getTasksByStatus(status: TaskStatus) {
@@ -73,7 +75,7 @@ export function KanbanBoard({ tasks, projectId, users }: Props) {
 
             <div className="space-y-2 min-h-[100px]">
               {columnTasks.map((task) => (
-                <TaskCard key={task.id} task={task} users={users} />
+                <TaskCard key={task.id} task={task} users={users} currentUserId={currentUserId} canEdit={canEdit} />
               ))}
               {columnTasks.length === 0 && (
                 <p className="py-8 text-center text-xs text-gray-400">

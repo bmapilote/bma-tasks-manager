@@ -7,9 +7,10 @@ import type { SerializedSubTask } from "@/types";
 type Props = {
   taskId: string;
   subtasks: SerializedSubTask[];
+  isAssignee?: boolean;
 };
 
-export function SubTaskList({ taskId, subtasks }: Props) {
+export function SubTaskList({ taskId, subtasks, isAssignee = false }: Props) {
   const completedCount = subtasks.filter((s) => s.completed).length;
   const totalCount = subtasks.length;
   const allDone = totalCount > 0 && completedCount === totalCount;
@@ -39,12 +40,12 @@ export function SubTaskList({ taskId, subtasks }: Props) {
         </div>
       )}
 
-      <SubTaskForm taskId={taskId} />
+      {isAssignee && <SubTaskForm taskId={taskId} />}
 
       {subtasks.length > 0 && (
         <div className="mt-2 space-y-0.5">
           {subtasks.map((subTask) => (
-            <SubTaskItem key={subTask.id} subTask={subTask} />
+            <SubTaskItem key={subTask.id} subTask={subTask} isAssignee={isAssignee} />
           ))}
         </div>
       )}

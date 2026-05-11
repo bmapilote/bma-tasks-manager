@@ -82,7 +82,9 @@ export async function updateTask(id: string, formData: FormData) {
   if (!task) {
     return { error: "Tâche introuvable" };
   }
-  if (task.project.ownerId !== user.id && !isAdmin(user.role)) {
+  const isOwner = task.project.ownerId === user.id;
+  const isAssignee = task.assigneeId === user.id;
+  if (!isOwner && !isAssignee && !isAdmin(user.role)) {
     return { error: "Accès refusé" };
   }
 
@@ -165,7 +167,7 @@ export async function updateTaskStatus(id: string, status: TaskStatus) {
   }
   const isOwner = task.project.ownerId === user.id;
   const isAssignee = task.assigneeId === user.id;
-  if (!isOwner && !isAssignee && !can(user.role, "tasks:change_status")) {
+  if (!isOwner && !isAssignee && !isAdmin(user.role)) {
     return { error: "Accès refusé" };
   }
 

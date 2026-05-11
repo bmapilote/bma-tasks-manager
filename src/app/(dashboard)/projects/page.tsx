@@ -11,7 +11,14 @@ export default async function ProjectsPage() {
   const user = await requireUser();
 
   const projects = await prisma.project.findMany({
-    where: isAdmin(user.role) ? {} : { ownerId: user.id },
+    where: isAdmin(user.role)
+      ? {}
+      : {
+          OR: [
+            { ownerId: user.id },
+            { tasks: { some: { assigneeId: user.id } } },
+          ],
+        },
     orderBy: { updatedAt: "desc" },
     include: { _count: { select: { tasks: true } } },
   });

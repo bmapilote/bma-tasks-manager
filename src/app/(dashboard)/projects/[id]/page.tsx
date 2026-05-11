@@ -109,6 +109,8 @@ export default async function ProjectDetailPage({ params }: Props) {
         }))}
         projectId={id}
         users={users}
+        currentUserId={user.id}
+        canEdit={canEdit}
       />
     </div>
   );
