@@ -23,14 +23,19 @@ No tests or CI configured. No typecheck script in package.json — use `npx tsc 
 
 ## Prisma + Supabase PostgreSQL
 - Schema: `prisma/schema.prisma` — PostgreSQL (Supabase), 5 models (User, Project, Task, SubTask, ActivityLog)
-- Database hosted on Supabase (`db.mejeuwjrwxkyfhyfzgag.supabase.co`)
+- Database hosted on Supabase (`db.okxlsimomewvtfwsgirn.supabase.co`)
 ```sh
-npx prisma generate   # regen client after schema change
-npx prisma db push    # push schema to Supabase
-npx prisma studio     # GUI data browser (via Supabase proxy)
+npx prisma generate                # regen client after schema change
+npx prisma db push                 # push schema to Supabase (fallback local)
+npx prisma migrate dev --name <x>  # create + apply migration (use direct connection)
+npx prisma migrate deploy          # apply pending migrations in production
+npx prisma studio                  # GUI data browser (via Supabase proxy)
 ```
-- No migrations in use — `db push` is the workflow
-- Connection: `DATABASE_URL` in `.env` uses port 5432 (direct) — use 6543 (pooler) for production
+- **Migrations** are the primary workflow. SQL files in `prisma/migrations/`
+- Connection: `.env` uses pooler (port 6543). For migration commands, use **direct connection**:
+  - Direct: `postgresql://postgres:pass@db.okxlsimomewvtfwsgirn.supabase.co:5432/postgres?sslmode=require`
+  - Pooler: `postgresql://postgres.okxlsimomewvtfwsgirn:pass@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true`
+  - Pooler ne supporte PAS les migrations (DDL) — utilisez la connexion directe pour `migrate dev`
 - Supabase JS client available in `src/utils/supabase/` (server.ts, client.ts, middleware.ts)
 
 ## Data migration
@@ -71,7 +76,7 @@ npx prisma studio     # GUI data browser (via Supabase proxy)
 ## Netlify deployment
 
 ### netlify.toml
-- Located at project root — build command: `npx prisma generate && npm run build`
+- Located at project root — build command: `npx prisma migrate deploy && npx prisma generate && npm run build`
 - OpenNext adapter is auto-injected at build time (no `@netlify/plugin-nextjs` needed)
 - `proxy.ts` runs as an Edge Function automatically
 
@@ -86,7 +91,7 @@ Set these under **Site settings → Environment variables** (do NOT commit to `.
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://okxlsimomewvtfwsgirn.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` (your anon key) |
 
-**Critical:** If Supabase pooler (port 6543) is unreachable, use direct connection (port 5432) with `connection_limit=1`. To use the pooler, enable it first in **Supabase Dashboard → Database → Connection pooling**, then switch to port 6543 with `pgbouncer=true`.
+**Critical:** The Netlify `DATABASE_URL` uses direct connection (port 5432) with `connection_limit=1`, which supports `prisma migrate deploy`. This is required — the pooler (port 6543) ne supporte pas les migrations (DDL).
 
 ### Login/register troubleshooting
 If auth fails on Netlify:
