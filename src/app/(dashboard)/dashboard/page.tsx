@@ -54,10 +54,10 @@ export default async function DashboardPage({ searchParams }: Props) {
     <div className="space-y-6 animate-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+          <h1 className="text-xl font-semibold text-gray-900">
             Tableau de bord
           </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-1 text-sm text-gray-500">
             Bon retour, {user.name || user.email?.split("@")[0]}
           </p>
         </div>
@@ -71,7 +71,7 @@ export default async function DashboardPage({ searchParams }: Props) {
 
       <section>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+          <h2 className="text-sm font-semibold text-gray-700">
             Progression des projets
           </h2>
         </div>
@@ -80,7 +80,7 @@ export default async function DashboardPage({ searchParams }: Props) {
 
       <section>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+          <h2 className="text-sm font-semibold text-gray-700">
             Analyses
           </h2>
         </div>
@@ -93,11 +93,11 @@ export default async function DashboardPage({ searchParams }: Props) {
 
       <section>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+          <h2 className="text-sm font-semibold text-gray-700">
             Activité récente
           </h2>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
           <ActivityFeed activities={data.recentActivity} />
         </div>
       </section>

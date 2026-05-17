@@ -38,7 +38,7 @@ export function DashboardFilters({ projects }: Props) {
   const hasFilters = currentProject || currentStatus || currentPriority || currentSearch;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+    <div className="rounded-xl border border-gray-200 bg-white p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -47,7 +47,7 @@ export function DashboardFilters({ projects }: Props) {
             placeholder="Rechercher une tâche ou un projet..."
             defaultValue={currentSearch}
             onChange={(e) => setParam("search", e.target.value)}
-            className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+            className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
 
@@ -55,7 +55,7 @@ export function DashboardFilters({ projects }: Props) {
           <select
             value={currentProject}
             onChange={(e) => setParam("projectId", e.target.value)}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
           >
             <option value="">Tous les projets</option>
             {projects.map((p) => (
@@ -68,7 +68,7 @@ export function DashboardFilters({ projects }: Props) {
           <select
             value={currentStatus}
             onChange={(e) => setParam("status", e.target.value)}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
           >
             <option value="">Tous les statuts</option>
             <option value="TODO">À faire</option>
@@ -79,7 +79,7 @@ export function DashboardFilters({ projects }: Props) {
           <select
             value={currentPriority}
             onChange={(e) => setParam("priority", e.target.value)}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
           >
             <option value="">Toutes priorités</option>
             <option value="URGENT">Urgent</option>
@@ -91,7 +91,7 @@ export function DashboardFilters({ projects }: Props) {
           {hasFilters && (
             <button
               onClick={clearFilters}
-              className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+              className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-gray-500 transition-colors hover:bg-gray-100"
             >
               <X className="h-4 w-4" />
               Réinitialiser

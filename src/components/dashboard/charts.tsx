@@ -55,7 +55,7 @@ export function Charts({ taskDistribution, tasksPerProject, productivityData }: 
             />
           </PieChart>
         </ResponsiveContainer>
-        <div className="mt-2 flex justify-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+        <div className="mt-2 flex justify-center gap-4 text-xs text-gray-500">
           {taskDistribution.map((d) => (
             <div key={d.name} className="flex items-center gap-1.5">
               <div
@@ -148,13 +148,13 @@ function ChartCard({
 }) {
   return (
     <div
-      className={`rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800 ${className}`}
+      className={`rounded-xl border border-gray-200 bg-white p-5 ${className}`}
     >
-      <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+      <h3 className="mb-4 text-sm font-semibold text-gray-700">
         {title}
       </h3>
       {empty ? (
-        <div className="flex h-[220px] items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+        <div className="flex h-[220px] items-center justify-center text-sm text-gray-400">
           Aucune donnée disponible
         </div>
       ) : (

@@ -52,9 +52,9 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-      <div className="flex h-14 items-center border-b border-gray-200 px-6 dark:border-gray-700">
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-gray-900 dark:text-white">
+    <aside className="flex h-screen w-64 flex-col border-r border-gray-200 bg-white">
+      <div className="flex h-14 items-center border-b border-gray-200 px-6">
+        <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-gray-900">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 text-xs font-bold text-white">
             B
           </div>
@@ -73,8 +73,8 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+                  ? "bg-blue-50 text-blue-700"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               )}
             >
               <Icon className="h-4 w-4" />
@@ -85,7 +85,7 @@ export function Sidebar() {
 
         {isAdmin && (
           <>
-            <div className="my-2 border-t border-gray-200 pt-2 dark:border-gray-700">
+            <div className="my-2 border-t border-gray-200 pt-2">
               <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
                 Administration
               </p>
@@ -100,8 +100,8 @@ export function Sidebar() {
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     isActive
-                      ? "bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+                      ? "bg-purple-50 text-purple-700"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -113,14 +113,14 @@ export function Sidebar() {
         )}
       </nav>
 
-      <div className="border-t border-gray-200 px-3 py-3 dark:border-gray-700">
+      <div className="border-t border-gray-200 px-3 py-3">
         <Link
           href="/settings"
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors mb-1",
             pathname.startsWith("/settings")
-              ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+              ? "bg-blue-50 text-blue-700"
+              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
           )}
         >
           <Settings className="h-4 w-4" />
@@ -128,7 +128,7 @@ export function Sidebar() {
         </Link>
         <button
           onClick={handleSignOut}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
         >
           <LogOut className="h-4 w-4" />
           Déconnexion
