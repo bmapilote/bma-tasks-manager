@@ -22,11 +22,11 @@ export function TaskForm({ projectId, users }: Props) {
   );
 
   return (
-    <form action={formAction} className="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
+    <form action={formAction} className="space-y-3 rounded-lg border border-border bg-card p-4">
       <input type="hidden" name="projectId" value={projectId} />
 
       {state?.error && (
-        <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
+        <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-300">
           {state.error}
         </div>
       )}
@@ -38,7 +38,7 @@ export function TaskForm({ projectId, users }: Props) {
           type="text"
           required
           placeholder="Titre de la tâche"
-          className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
 
@@ -48,7 +48,7 @@ export function TaskForm({ projectId, users }: Props) {
           name="description"
           rows={2}
           placeholder="Description (optionnelle)"
-          className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
 
@@ -56,7 +56,7 @@ export function TaskForm({ projectId, users }: Props) {
         <select
           name="priority"
           defaultValue="MEDIUM"
-          className="block rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="block rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         >
           <option value="LOW">Basse</option>
           <option value="MEDIUM">Moyenne</option>
@@ -67,12 +67,12 @@ export function TaskForm({ projectId, users }: Props) {
         <input
           name="dueDate"
           type="date"
-          className="block rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="block rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
 
         <select
           name="assigneeId"
-          className="block min-w-[160px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="block min-w-[160px] rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         >
           <option value="">Non assignée</option>
           {users.map((u) => (
@@ -86,7 +86,7 @@ export function TaskForm({ projectId, users }: Props) {
       <button
         type="submit"
         disabled={isPending}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
       >
         {isPending ? (
           <Loader2 className="h-4 w-4 animate-spin" />

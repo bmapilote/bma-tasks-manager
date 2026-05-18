@@ -11,10 +11,10 @@ export default async function AdminUsersPage() {
   return (
     <div className="space-y-6 animate-in">
       <div>
-        <h1 className="text-xl font-semibold text-gray-900">
+        <h1 className="text-xl font-semibold text-foreground">
           Gestion des utilisateurs
         </h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-muted-foreground">
           {users.length} utilisateur{users.length !== 1 ? "s" : ""} inscrit{users.length !== 1 ? "s" : ""}
         </p>
       </div>

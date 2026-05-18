@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { toggleSubTask, deleteSubTask, updateSubTask } from "@/actions/subtasks";
 import { Trash2, Check, Pencil } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { SerializedSubTask } from "@/types";
 
 type Props = {
@@ -55,21 +56,23 @@ export function SubTaskItem({ subTask, isAssignee = false }: Props) {
       {isAssignee ? (
         <button
           onClick={handleToggle}
-          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+          className={cn(
+            "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
             subTask.completed
               ? "border-green-500 bg-green-500 text-white"
-              : "border-gray-300 bg-white hover:border-gray-400"
-          }`}
+              : "border-border bg-card hover:border-gray-400 dark:hover:border-gray-500"
+          )}
         >
           {subTask.completed && <Check className="h-3 w-3" />}
         </button>
       ) : (
         <div
-          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+          className={cn(
+            "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
             subTask.completed
               ? "border-green-500 bg-green-500 text-white"
-              : "border-gray-300 bg-white"
-          }`}
+              : "border-border bg-card"
+          )}
         >
           {subTask.completed && <Check className="h-3 w-3" />}
         </div>
@@ -83,13 +86,14 @@ export function SubTaskItem({ subTask, isAssignee = false }: Props) {
           onChange={(e) => setTitle(e.target.value)}
           onBlur={handleSave}
           onKeyDown={handleKeyDown}
-          className="block w-full rounded border border-blue-300 px-1 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="block w-full rounded border border-primary px-1 py-0.5 bg-card text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-primary"
         />
       ) : (
         <span
-          className={`flex-1 truncate text-xs ${
-            subTask.completed ? "text-gray-400 line-through" : "text-gray-700"
-          }`}
+          className={cn(
+            "flex-1 truncate text-xs",
+            subTask.completed ? "text-muted-foreground line-through" : "text-foreground"
+          )}
         >
           {subTask.title}
         </span>
@@ -99,14 +103,14 @@ export function SubTaskItem({ subTask, isAssignee = false }: Props) {
         <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
           <button
             onClick={() => setEditing(true)}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-muted-foreground hover:text-foreground"
             title="Modifier"
           >
             <Pencil className="h-3 w-3" />
           </button>
           <button
             onClick={handleDelete}
-            className="text-gray-400 hover:text-red-500"
+            className="text-muted-foreground hover:text-destructive"
             title="Supprimer"
           >
             <Trash2 className="h-3 w-3" />

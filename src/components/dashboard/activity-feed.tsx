@@ -20,37 +20,37 @@ const actionConfig: Record<
   "task:created": {
     label: "Tâche créée",
     icon: PlusCircle,
-    color: "text-blue-500 bg-blue-50",
+    color: "text-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-300",
   },
   "task:completed": {
     label: "Tâche terminée",
     icon: CheckCircle2,
-    color: "text-green-500 bg-green-50",
+    color: "text-green-500 bg-green-50 dark:bg-green-900/30 dark:text-green-300",
   },
   "task:updated": {
     label: "Tâche modifiée",
     icon: Edit3,
-    color: "text-amber-500 bg-amber-50",
+    color: "text-amber-500 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-300",
   },
   "task:deleted": {
     label: "Tâche supprimée",
     icon: Trash2,
-    color: "text-red-500 bg-red-50",
+    color: "text-red-500 bg-red-50 dark:bg-red-900/30 dark:text-red-300",
   },
   "subtask:added": {
     label: "Sous-tâche ajoutée",
     icon: ListPlus,
-    color: "text-teal-500 bg-teal-50",
+    color: "text-teal-500 bg-teal-50 dark:bg-teal-900/30 dark:text-teal-300",
   },
   "project:created": {
     label: "Projet créé",
     icon: FolderPlus,
-    color: "text-violet-500 bg-violet-50",
+    color: "text-violet-500 bg-violet-50 dark:bg-violet-900/30 dark:text-violet-300",
   },
   "project:deleted": {
     label: "Projet supprimé",
     icon: FolderKanban,
-    color: "text-gray-500 bg-gray-50",
+    color: "text-gray-500 bg-gray-50 dark:bg-gray-800 dark:text-gray-300",
   },
 };
 
@@ -78,9 +78,9 @@ type Props = {
 export function ActivityFeed({ activities }: Props) {
   if (activities.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 p-10 text-center">
-        <Clock className="mb-3 h-10 w-10 text-gray-300" />
-        <p className="text-sm text-gray-400">
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border p-10 text-center">
+        <Clock className="mb-3 h-10 w-10 text-muted-foreground/40" />
+        <p className="text-sm text-muted-foreground">
           Aucune activité récente
         </p>
       </div>
@@ -89,19 +89,19 @@ export function ActivityFeed({ activities }: Props) {
 
   return (
     <div className="relative">
-      <div className="absolute left-4 top-0 h-full w-px bg-gray-200" />
+      <div className="absolute left-4 top-0 h-full w-px bg-border" />
       <div className="space-y-0">
-        {activities.map((activity, i) => {
+        {activities.map((activity) => {
           const config = actionConfig[activity.action] || {
             label: activity.action,
             icon: Clock,
-            color: "text-gray-500 bg-gray-50",
+            color: "text-gray-500 bg-gray-50 dark:bg-gray-800 dark:text-gray-300",
           };
           const Icon = config.icon;
           let meta: Record<string, string> = {};
           try {
             meta = activity.metadata ? JSON.parse(activity.metadata) : {};
-          } catch {}
+          } catch { }
 
           return (
             <div key={activity.id} className="relative flex items-start gap-4 pb-4">
@@ -114,20 +114,20 @@ export function ActivityFeed({ activities }: Props) {
                 <Icon className="h-4 w-4" />
               </div>
               <div className="flex-1 min-w-0 pt-1">
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-muted-foreground">
                   {config.label}
                   {meta.title && (
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-foreground">
                       {" "}«{meta.title}»
                     </span>
                   )}
                   {meta.projectName && (
-                    <span className="text-gray-500">
+                    <span className="text-muted-foreground">
                       {" "}dans {meta.projectName}
                     </span>
                   )}
                 </p>
-                <p className="mt-0.5 text-xs text-gray-400">
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   {timeAgo(activity.createdAt)}
                 </p>
               </div>

@@ -56,7 +56,7 @@ export default async function ProjectDetailPage({ params }: Props) {
         <div className="flex items-center gap-3">
           <Link
             href="/projects"
-            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
@@ -66,10 +66,10 @@ export default async function ProjectDetailPage({ params }: Props) {
                 className="h-3 w-3 rounded-full"
                 style={{ backgroundColor: project.color || "#3b82f6" }}
               />
-              <h1 className="text-xl font-semibold text-gray-900">{project.name}</h1>
+              <h1 className="text-xl font-semibold text-foreground">{project.name}</h1>
             </div>
             {project.description && (
-              <p className="mt-0.5 text-sm text-gray-500">{project.description}</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">{project.description}</p>
             )}
           </div>
         </div>
@@ -78,7 +78,7 @@ export default async function ProjectDetailPage({ params }: Props) {
           <form action={deleteProject.bind(null, id)}>
             <button
               type="submit"
-              className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+              className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
             >
               <Trash2 className="h-4 w-4" />
               Supprimer

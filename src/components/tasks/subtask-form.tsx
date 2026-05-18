@@ -22,12 +22,12 @@ export function SubTaskForm({ taskId }: Props) {
         type="text"
         required
         placeholder="Ajouter une sous-tâche"
-        className="block w-full rounded-md border border-gray-300 px-2 py-1 text-xs shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className="block w-full rounded-md border border-input bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
       />
       <button
         type="submit"
         disabled={isPending}
-        className="flex shrink-0 items-center justify-center rounded-md bg-blue-600 p-1 text-white hover:bg-blue-700 disabled:opacity-50"
+        className="flex shrink-0 items-center justify-center rounded-md bg-primary p-1 text-primary-foreground hover:opacity-90 disabled:opacity-50"
       >
         {isPending ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -36,7 +36,7 @@ export function SubTaskForm({ taskId }: Props) {
         )}
       </button>
       {state?.error && (
-        <span className="text-xs text-red-500">{state.error}</span>
+        <span className="text-xs text-destructive">{state.error}</span>
       )}
     </form>
   );

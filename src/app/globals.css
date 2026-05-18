@@ -1,25 +1,166 @@
 @import "tailwindcss";
 
+/* ── Theme tokens ──
+   We use CSS custom properties for all semantic colors so that the single
+   toggle (dark class on <html>) can flip the entire palette instantly.
+   Tailwind v4 reads these values via @theme inline. */
+
 :root {
   --background: #f9fafb;
   --foreground: #111827;
+
   --card: #ffffff;
-  --card-border: #e5e7eb;
+  --card-foreground: #111827;
+
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f3f4f6;
+  --secondary-foreground: #1f2937;
+
   --muted: #f3f4f6;
   --muted-foreground: #6b7280;
+
+  --accent: #f3f4f6;
+  --accent-foreground: #1f2937;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --success: #22c55e;
+  --success-foreground: #ffffff;
+
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+
+  --border: #e5e7eb;
+  --border-hover: #d1d5db;
+  --input: #e5e7eb;
+  --ring: #2563eb;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #374151;
+  --sidebar-border: #e5e7eb;
+
+  --radius: 0.625rem;
+}
+
+.dark {
+  --background: #0f1117;
+  --foreground: #f3f4f6;
+
+  --card: #181b24;
+  --card-foreground: #f3f4f6;
+
+  --popover: #181b24;
+  --popover-foreground: #f3f4f6;
+
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+
+  --secondary: #1f2937;
+  --secondary-foreground: #e5e7eb;
+
+  --muted: #1f2937;
+  --muted-foreground: #9ca3af;
+
+  --accent: #1f2937;
+  --accent-foreground: #e5e7eb;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --success: #22c55e;
+  --success-foreground: #000000;
+
+  --warning: #f59e0b;
+  --warning-foreground: #000000;
+
+  --border: #2a2f3c;
+  --border-hover: #374151;
+  --input: #2a2f3c;
+  --ring: #3b82f6;
+
+  --sidebar: #111318;
+  --sidebar-foreground: #9ca3af;
+  --sidebar-border: #232733;
+
+  --radius: 0.625rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  --color-border: var(--border);
+  --color-border-hover: var(--border-hover);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+/* ── Base ── */
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+/* ── Utilities ── */
+@layer base {
+  * {
+    border-color: var(--border);
+  }
 }
 
 @keyframes fade-in-up {
@@ -35,4 +176,9 @@ body {
 
 .animate-in {
   animation: fade-in-up 0.3s ease-out;
+}
+
+/* Smooth transitions for theme changes */
+.theme-transition {
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 }

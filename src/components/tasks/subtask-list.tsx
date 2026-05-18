@@ -18,20 +18,22 @@ export function SubTaskList({ taskId, subtasks, isAssignee = false }: Props) {
   return (
     <div
       className={`mt-3 rounded-md border p-2 ${
-        allDone ? "border-green-200 bg-green-50" : "border-gray-100 bg-gray-50"
+        allDone
+          ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/10"
+          : "border-border bg-muted/50"
       }`}
     >
       {totalCount > 0 && (
         <div className="mb-2">
-          <div className="flex items-center justify-between text-xs text-gray-500">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>
               {completedCount}/{totalCount} sous-tâches terminées
             </span>
             {allDone && (
-              <span className="font-medium text-green-600">Terminé</span>
+              <span className="font-medium text-green-600 dark:text-green-400">Terminé</span>
             )}
           </div>
-          <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+          <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div
               className="h-full rounded-full bg-green-500 transition-all"
               style={{ width: `${(completedCount / totalCount) * 100}%` }}

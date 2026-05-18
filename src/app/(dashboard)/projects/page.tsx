@@ -27,26 +27,26 @@ export default async function ProjectsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Projets</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-xl font-semibold text-foreground">Projets</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             {projects.length} projet{projects.length !== 1 ? "s" : ""}
           </p>
         </div>
       </div>
 
-      <details className="group rounded-lg border border-gray-200 bg-white">
-        <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50">
+      <details className="group rounded-lg border border-border bg-card">
+        <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-medium text-foreground hover:bg-accent">
           <Plus className="h-4 w-4" />
           Nouveau projet
         </summary>
-        <div className="border-t border-gray-200 px-4 py-4">
+        <div className="border-t border-border px-4 py-4">
           <ProjectForm />
         </div>
       </details>
 
       {projects.length === 0 ? (
         <div className="py-16 text-center">
-          <p className="text-sm text-gray-400">Aucun projet pour le moment</p>
+          <p className="text-sm text-muted-foreground">Aucun projet pour le moment</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

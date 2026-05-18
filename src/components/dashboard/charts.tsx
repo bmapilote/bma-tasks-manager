@@ -1,5 +1,6 @@
 "use client";
 
+import { useTheme } from "@/components/theme/theme-provider";
 import {
   PieChart,
   Pie,
@@ -22,9 +23,23 @@ type Props = {
 };
 
 export function Charts({ taskDistribution, tasksPerProject, productivityData }: Props) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+
   const hasTasks = taskDistribution.some((d) => d.value > 0);
   const hasProjects = tasksPerProject.some((p) => p.tasks > 0);
   const hasProductivity = productivityData.some((d) => d.completed > 0);
+
+  const tooltipStyle = {
+    backgroundColor: isDark ? "#111318" : "#ffffff",
+    border: `1px solid ${isDark ? "#232733" : "#e5e7eb"}`,
+    borderRadius: "8px",
+    fontSize: "13px",
+    color: isDark ? "#f3f4f6" : "#111827",
+  };
+
+  const axisColor = isDark ? "#6b7280" : "#9ca3af";
+  const gridColor = isDark ? "#232733" : "#e5e7eb";
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
@@ -46,16 +61,10 @@ export function Charts({ taskDistribution, tasksPerProject, productivityData }: 
                   <Cell key={entry.name} fill={entry.color} />
                 ))}
             </Pie>
-            <Tooltip
-              contentStyle={{
-                borderRadius: "8px",
-                border: "1px solid #e5e7eb",
-                fontSize: "13px",
-              }}
-            />
+            <Tooltip contentStyle={tooltipStyle} />
           </PieChart>
         </ResponsiveContainer>
-        <div className="mt-2 flex justify-center gap-4 text-xs text-gray-500">
+        <div className="mt-2 flex flex-wrap justify-center gap-3 text-xs text-muted-foreground">
           {taskDistribution.map((d) => (
             <div key={d.name} className="flex items-center gap-1.5">
               <div
@@ -71,20 +80,10 @@ export function Charts({ taskDistribution, tasksPerProject, productivityData }: 
       <ChartCard title="Tâches par projet" empty={!hasProjects}>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={tasksPerProject}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis
-              dataKey="name"
-              tick={{ fontSize: 11 }}
-              stroke="#9ca3af"
-            />
-            <YAxis tick={{ fontSize: 11 }} stroke="#9ca3af" allowDecimals={false} />
-            <Tooltip
-              contentStyle={{
-                borderRadius: "8px",
-                border: "1px solid #e5e7eb",
-                fontSize: "13px",
-              }}
-            />
+            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+            <XAxis dataKey="name" tick={{ fontSize: 11, fill: axisColor }} stroke={axisColor} />
+            <YAxis tick={{ fontSize: 11, fill: axisColor }} stroke={axisColor} allowDecimals={false} />
+            <Tooltip contentStyle={tooltipStyle} />
             <Bar dataKey="tasks" radius={[4, 4, 0, 0]}>
               {tasksPerProject.map((entry) => (
                 <Cell key={entry.name} fill={entry.color} />
@@ -101,31 +100,16 @@ export function Charts({ taskDistribution, tasksPerProject, productivityData }: 
       >
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={productivityData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis
-              dataKey="date"
-              tick={{ fontSize: 10 }}
-              stroke="#9ca3af"
-              interval="preserveStartEnd"
-            />
-            <YAxis
-              tick={{ fontSize: 11 }}
-              stroke="#9ca3af"
-              allowDecimals={false}
-            />
-            <Tooltip
-              contentStyle={{
-                borderRadius: "8px",
-                border: "1px solid #e5e7eb",
-                fontSize: "13px",
-              }}
-            />
+            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+            <XAxis dataKey="date" tick={{ fontSize: 10, fill: axisColor }} stroke={axisColor} interval="preserveStartEnd" />
+            <YAxis tick={{ fontSize: 11, fill: axisColor }} stroke={axisColor} allowDecimals={false} />
+            <Tooltip contentStyle={tooltipStyle} />
             <Line
               type="monotone"
               dataKey="completed"
-              stroke="#3b82f6"
+              stroke={isDark ? "#60a5fa" : "#3b82f6"}
               strokeWidth={2}
-              dot={{ r: 3, fill: "#3b82f6" }}
+              dot={{ r: 3, fill: isDark ? "#60a5fa" : "#3b82f6" }}
               activeDot={{ r: 5 }}
             />
           </LineChart>
@@ -147,14 +131,12 @@ function ChartCard({
   className?: string;
 }) {
   return (
-    <div
-      className={`rounded-xl border border-gray-200 bg-white p-5 ${className}`}
-    >
-      <h3 className="mb-4 text-sm font-semibold text-gray-700">
+    <div className={`rounded-xl border border-border bg-card p-5 ${className}`}>
+      <h3 className="mb-4 text-sm font-semibold text-foreground">
         {title}
       </h3>
       {empty ? (
-        <div className="flex h-[220px] items-center justify-center text-sm text-gray-400">
+        <div className="flex h-[220px] items-center justify-center text-sm text-muted-foreground">
           Aucune donnée disponible
         </div>
       ) : (

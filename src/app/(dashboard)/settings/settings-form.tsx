@@ -11,18 +11,18 @@ export function SettingsForm({ defaultName, defaultEmail }: Props) {
   const { user } = useSupabaseUser();
 
   return (
-    <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-5">
+    <div className="space-y-4 rounded-lg border border-border bg-card p-5">
       <div>
-        <label className="block text-sm font-medium text-gray-700">Nom</label>
-        <p className="mt-1 text-sm text-gray-900">{defaultName || "Non renseigné"}</p>
+        <label className="block text-sm font-medium text-foreground">Nom</label>
+        <p className="mt-1 text-sm text-foreground">{defaultName || "Non renseigné"}</p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Email</label>
-        <p className="mt-1 text-sm text-gray-900">{defaultEmail}</p>
+        <label className="block text-sm font-medium text-foreground">Email</label>
+        <p className="mt-1 text-sm text-foreground">{defaultEmail}</p>
       </div>
 
-      <div className="rounded-md bg-gray-50 p-3 text-xs text-gray-500">
+      <div className="rounded-md bg-secondary p-3 text-xs text-muted-foreground">
         La modification du profil sera disponible dans une prochaine version.
       </div>
     </div>
