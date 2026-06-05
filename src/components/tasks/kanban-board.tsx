@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { updateTaskStatus } from "@/actions/tasks";
 import { TaskCard } from "./task-card";
+import { TaskDetailModal } from "./task-detail-modal";
 import type { TaskStatus, SerializedTask } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,7 @@ type Props = {
 
 export function KanbanBoard({ tasks, users, currentUserId, canEdit }: Props) {
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   function getTasksByStatus(status: TaskStatus) {
     return tasks
@@ -75,7 +77,14 @@ export function KanbanBoard({ tasks, users, currentUserId, canEdit }: Props) {
 
             <div className="space-y-2 min-h-[100px]">
               {columnTasks.map((task) => (
-                <TaskCard key={task.id} task={task} users={users} currentUserId={currentUserId} canEdit={canEdit} />
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  users={users}
+                  currentUserId={currentUserId}
+                  canEdit={canEdit}
+                  onSelect={setSelectedTaskId}
+                />
               ))}
               {columnTasks.length === 0 && (
                 <p className="py-8 text-center text-xs text-muted-foreground">
@@ -86,6 +95,16 @@ export function KanbanBoard({ tasks, users, currentUserId, canEdit }: Props) {
           </div>
         );
       })}
+
+      {selectedTaskId && (
+        <TaskDetailModal
+          task={tasks.find((t) => t.id === selectedTaskId)!}
+          users={users}
+          currentUserId={currentUserId}
+          canEdit={canEdit}
+          onClose={() => setSelectedTaskId(null)}
+        />
+      )}
     </div>
   );
 }

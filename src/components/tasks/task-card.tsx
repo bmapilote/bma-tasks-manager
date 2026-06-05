@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { deleteTask, reassignTask } from "@/actions/tasks";
 import { cn, formatDateRelative } from "@/lib/utils";
 import { AlertCircle, Calendar, Trash2, User } from "lucide-react";
@@ -32,16 +32,30 @@ type Props = {
   users: UserOption[];
   currentUserId: string;
   canEdit: boolean;
+  onSelect?: (taskId: string) => void;
 };
 
-export function TaskCard({ task, users, currentUserId, canEdit }: Props) {
+export function TaskCard({ task, users, currentUserId, canEdit, onSelect }: Props) {
   const isAssignee = task.assigneeId === currentUserId;
   const router = useRouter();
   const [assigning, startAssign] = useTransition();
   const [showAssigneePicker, setShowAssigneePicker] = useState(false);
+  const isDragging = useRef(false);
 
   async function handleDragStart(e: React.DragEvent) {
+    isDragging.current = true;
     e.dataTransfer.setData("taskId", task.id);
+  }
+
+  function handleDragEnd() {
+    isDragging.current = false;
+  }
+
+  function handleClick() {
+    if (!isDragging.current && onSelect) {
+      onSelect(task.id);
+    }
+    isDragging.current = false;
   }
 
   function handleAssigneeChange(e: React.ChangeEvent<HTMLSelectElement>) {
@@ -58,6 +72,8 @@ export function TaskCard({ task, users, currentUserId, canEdit }: Props) {
     <div
       draggable
       onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onClick={handleClick}
       className={cn(
         "group cursor-grab rounded-lg border border-border border-t-4 bg-card p-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing",
         statusColors[task.status]
