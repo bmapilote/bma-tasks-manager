@@ -140,14 +140,15 @@ export async function importProjectTasks(
     _max: { position: true },
   });
   let nextPosition = (maxPosition._max.position ?? -1) + 1;
-  let created = 0;
+  let createdCompleted = 0;
+  let createdUpcoming = 0;
 
-  for (const t of data.upcomingTasks) {
+  const createdTask = async (t: TaskData, status: string) => {
     const task = await prisma.task.create({
       data: {
         title: t.title,
         description: t.description,
-        status: "TODO",
+        status,
         priority: ["LOW", "MEDIUM", "HIGH", "URGENT"].includes(t.priority)
           ? t.priority
           : "MEDIUM",
@@ -155,6 +156,7 @@ export async function importProjectTasks(
         estimatedHours: t.estimatedHours,
         position: nextPosition++,
         projectId,
+        completedAt: status === "DONE" ? new Date() : null,
       },
     });
 
@@ -167,13 +169,29 @@ export async function importProjectTasks(
         },
       });
     }
+  };
 
-    created++;
+  if (Array.isArray(data.completedTasks)) {
+    for (const t of data.completedTasks) {
+      await createdTask(t, "DONE");
+      createdCompleted++;
+    }
   }
 
-  logger.info({ userId: user.id, projectId, created }, "project:imported");
+  for (const t of data.upcomingTasks) {
+    await createdTask(t, "TODO");
+    createdUpcoming++;
+  }
+
+  const total = createdCompleted + createdUpcoming;
+
+  logger.info(
+    { userId: user.id, projectId, completed: createdCompleted, upcoming: createdUpcoming },
+    "project:imported"
+  );
   await logActivity(user.id, "backup:imported", projectId, "project", {
-    tasksCreated: created,
+    completed: createdCompleted,
+    upcoming: createdUpcoming,
   });
 
   revalidatePath(`/projects/${projectId}`);
@@ -181,6 +199,6 @@ export async function importProjectTasks(
   revalidatePath("/tasks");
 
   return {
-    success: `${created} tâche(s) importée(s) dans le projet`,
+    success: `${createdCompleted} tâche(s) terminée(s) + ${createdUpcoming} tâche(s) à venir — ${total} au total`,
   };
 }
