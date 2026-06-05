@@ -7,7 +7,11 @@ import Link from "next/link";
 export default async function LoginPage() {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const { data: { user: u } } = await supabase.auth.getUser();
+    user = u;
+  } catch { /* Supabase inaccessible — on laisse l'utilisateur se connecter */ }
   if (user) redirect("/dashboard");
 
   return (

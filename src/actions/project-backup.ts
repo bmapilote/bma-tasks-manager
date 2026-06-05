@@ -136,51 +136,53 @@ export async function importProjectTasks(
       where: { projectId },
       _max: { position: true },
     });
-    let nextPosition = (maxPosition._max.position ?? -1) + 1;
-    let createdCompleted = 0;
-    let createdUpcoming = 0;
+    let pos = (maxPosition._max.position ?? -1) + 1;
 
-    const createdTask = async (t: TaskData, status: string) => {
-      const task = await prisma.task.create({
-        data: {
-          title: t.title || "Sans titre",
-          description: t.description,
-          status,
-          priority: ["LOW", "MEDIUM", "HIGH", "URGENT"].includes(t.priority)
-            ? t.priority
-            : "MEDIUM",
-          dueDate: t.dueDate ? new Date(t.dueDate) : null,
-          estimatedHours: t.estimatedHours ?? null,
-          position: nextPosition++,
-          projectId,
-          completedAt: status === "DONE" ? new Date() : null,
-        },
-      });
+    const mapStatus = (t: TaskData, status: string) => ({
+      title: t.title || "Sans titre",
+      description: t.description,
+      status,
+      priority: ["LOW", "MEDIUM", "HIGH", "URGENT"].includes(t.priority)
+        ? t.priority
+        : "MEDIUM",
+      dueDate: t.dueDate ? new Date(t.dueDate) : null,
+      estimatedHours: t.estimatedHours ?? null,
+      position: pos++,
+      projectId,
+      completedAt: status === "DONE" ? new Date() : null,
+    });
 
-      if (Array.isArray(t.subtasks)) {
-        for (const s of t.subtasks) {
-          await prisma.subTask.create({
-            data: {
-              title: s.title || "Sans titre",
-              completed: s.completed ?? false,
-              taskId: task.id,
-            },
-          });
+    const allTasks = [
+      ...(Array.isArray(data.completedTasks)
+        ? data.completedTasks.map((t) => ({ data: t, status: "DONE" as const }))
+        : []),
+      ...data.upcomingTasks.map((t) => ({ data: t, status: "TODO" as const })),
+    ];
+
+    const created = await Promise.all(
+      allTasks.map(async ({ data: t, status }) => {
+        const task = await prisma.task.create({
+          data: mapStatus(t, status),
+        });
+        if (Array.isArray(t.subtasks)) {
+          await Promise.all(
+            t.subtasks.map((s) =>
+              prisma.subTask.create({
+                data: {
+                  title: s.title || "Sans titre",
+                  completed: s.completed ?? false,
+                  taskId: task.id,
+                },
+              })
+            )
+          );
         }
-      }
-    };
+        return status;
+      })
+    );
 
-    if (Array.isArray(data.completedTasks)) {
-      for (const t of data.completedTasks) {
-        await createdTask(t, "DONE");
-        createdCompleted++;
-      }
-    }
-
-    for (const t of data.upcomingTasks) {
-      await createdTask(t, "TODO");
-      createdUpcoming++;
-    }
+    const createdCompleted = created.filter((s) => s === "DONE").length;
+    const createdUpcoming = created.filter((s) => s === "TODO").length;
 
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/projects");

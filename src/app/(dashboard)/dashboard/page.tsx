@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { getDashboardData } from "@/lib/dashboard-data";
@@ -20,9 +21,8 @@ export default async function DashboardPage({ searchParams }: Props) {
   try {
     user = await requireUser();
   } catch (err) {
-    const message = err instanceof Error ? `${err.name}: ${err.message}\n${err.stack}` : String(err);
     logger.error({ err }, "Dashboard requireUser failed");
-    throw err;
+    redirect("/login");
   }
 
   const params = await searchParams;
@@ -45,9 +45,8 @@ export default async function DashboardPage({ searchParams }: Props) {
       }),
     ]);
   } catch (err) {
-    const message = err instanceof Error ? `${err.name}: ${err.message}\n${err.stack}` : String(err);
     logger.error({ err, userId: user.id }, "Dashboard data fetch failed");
-    throw new Error("Erreur lors du chargement des données du tableau de bord");
+    redirect("/projects");
   }
 
   return (

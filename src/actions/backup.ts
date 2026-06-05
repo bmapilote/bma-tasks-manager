@@ -106,56 +106,62 @@ export async function importBackup(_prevState: ImportState, formData: FormData) 
       return { error: "Format de sauvegarde invalide" };
     }
 
-    let createdProjects = 0;
-    let createdTasks = 0;
-    let createdSubTasks = 0;
+    let totalTasks = 0;
 
-    for (const p of backup.projects) {
-      const project = await prisma.project.create({
-        data: {
-          name: p.name,
-          description: p.description,
-          color: p.color,
-          deadline: p.deadline ? new Date(p.deadline) : null,
-          ownerId: user.id,
-        },
-      });
-      createdProjects++;
-
-      for (const t of p.tasks) {
-        const task = await prisma.task.create({
+    await Promise.all(
+      backup.projects.map(async (p) => {
+        const project = await prisma.project.create({
           data: {
-            title: t.title,
-            description: t.description,
-            status: t.status || "TODO",
-            priority: t.priority || "MEDIUM",
-            dueDate: t.dueDate ? new Date(t.dueDate) : null,
-            estimatedHours: t.estimatedHours,
-            position: t.position,
-            projectId: project.id,
+            name: p.name,
+            description: p.description,
+            color: p.color,
+            deadline: p.deadline ? new Date(p.deadline) : null,
+            ownerId: user.id,
           },
         });
-        createdTasks++;
 
-        for (const s of t.subtasks) {
-          await prisma.subTask.create({
-            data: {
-              title: s.title,
-              completed: s.completed,
-              taskId: task.id,
-            },
-          });
-          createdSubTasks++;
-        }
-      }
-    }
+        const tasks = await Promise.all(
+          p.tasks.map((t) =>
+            prisma.task.create({
+              data: {
+                title: t.title,
+                description: t.description,
+                status: t.status || "TODO",
+                priority: t.priority || "MEDIUM",
+                dueDate: t.dueDate ? new Date(t.dueDate) : null,
+                estimatedHours: t.estimatedHours,
+                position: t.position,
+                projectId: project.id,
+              },
+            })
+          )
+        );
+        totalTasks += tasks.length;
+
+        await Promise.all(
+          p.tasks.map((t, i) =>
+            Promise.all(
+              t.subtasks.map((s) =>
+                prisma.subTask.create({
+                  data: {
+                    title: s.title,
+                    completed: s.completed,
+                    taskId: tasks[i].id,
+                  },
+                })
+              )
+            )
+          )
+        );
+      })
+    );
 
     revalidatePath("/projects");
     revalidatePath("/tasks");
     revalidatePath("/dashboard");
 
     return {
-      success: `${createdProjects} projet(s), ${createdTasks} tâche(s), ${createdSubTasks} sous-tâche(s) restauré(s)`,
+      success: `${backup.projects.length} projet(s), ${totalTasks} tâche(s) restauré(s)`,
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
