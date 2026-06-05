@@ -1,6 +1,8 @@
 import { requireUser } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { SettingsForm } from "./settings-form";
+import { BackupRestore } from "./backup-restore";
+import { UniversalPrompt } from "./universal-prompt";
 import { Shield } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +47,10 @@ export default async function SettingsPage() {
           defaultEmail={dbUser?.email || ""}
         />
       </div>
+
+      <BackupRestore />
+
+      <UniversalPrompt />
     </div>
   );
 }

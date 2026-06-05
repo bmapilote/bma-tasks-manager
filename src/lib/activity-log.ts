@@ -17,7 +17,9 @@ export type LogAction =
   | "user:role_changed"
   | "user:deactivated"
   | "user:activated"
-  | "admin:login";
+  | "admin:login"
+  | "backup:exported"
+  | "backup:imported";
 
 export async function logActivity(
   userId: string,

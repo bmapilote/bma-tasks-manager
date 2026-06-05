@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { TaskForm } from "@/components/tasks/task-form";
 import { KanbanBoard } from "@/components/tasks/kanban-board";
+import { ProjectBackup } from "@/components/projects/project-backup";
 import Link from "next/link";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { deleteProject } from "@/actions/projects";
@@ -74,17 +75,20 @@ export default async function ProjectDetailPage({ params }: Props) {
           </div>
         </div>
 
-        {canEdit && (
-          <form action={deleteProject.bind(null, id)}>
-            <button
-              type="submit"
-              className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-            >
-              <Trash2 className="h-4 w-4" />
-              Supprimer
-            </button>
-          </form>
-        )}
+        <div className="relative flex items-center gap-2">
+          <ProjectBackup projectId={id} />
+          {canEdit && (
+            <form action={deleteProject.bind(null, id)}>
+              <button
+                type="submit"
+                className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+              >
+                <Trash2 className="h-4 w-4" />
+                Supprimer
+              </button>
+            </form>
+          )}
+        </div>
       </div>
 
       {canEdit && <TaskForm projectId={id} users={users} />}
