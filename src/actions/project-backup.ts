@@ -142,28 +142,30 @@ export async function importProjectTasks(
   const createdTask = async (t: TaskData, status: string) => {
     const task = await prisma.task.create({
       data: {
-        title: t.title,
+        title: t.title || "Sans titre",
         description: t.description,
         status,
         priority: ["LOW", "MEDIUM", "HIGH", "URGENT"].includes(t.priority)
           ? t.priority
           : "MEDIUM",
         dueDate: t.dueDate ? new Date(t.dueDate) : null,
-        estimatedHours: t.estimatedHours,
+        estimatedHours: t.estimatedHours ?? null,
         position: nextPosition++,
         projectId,
         completedAt: status === "DONE" ? new Date() : null,
       },
     });
 
-    for (const s of t.subtasks) {
-      await prisma.subTask.create({
-        data: {
-          title: s.title,
-          completed: s.completed,
-          taskId: task.id,
-        },
-      });
+    if (Array.isArray(t.subtasks)) {
+      for (const s of t.subtasks) {
+        await prisma.subTask.create({
+          data: {
+            title: s.title || "Sans titre",
+            completed: s.completed ?? false,
+            taskId: task.id,
+          },
+        });
+      }
     }
   };
 
