@@ -103,16 +103,13 @@ export async function importProjectTasks(
   const user = await requireUser();
 
   const projectId = formData.get("projectId") as string;
-  const file = formData.get("file") as File;
+  const jsonContent = formData.get("jsonContent") as string;
 
   if (!projectId) {
     return { error: "Projet non spécifié" };
   }
-  if (!file) {
-    return { error: "Aucun fichier sélectionné" };
-  }
-  if (!file.name.endsWith(".json")) {
-    return { error: "Le fichier doit être au format JSON" };
+  if (!jsonContent || jsonContent.trim().length === 0) {
+    return { error: "Aucune donnée JSON fournie" };
   }
 
   const project = await prisma.project.findUnique({
@@ -125,8 +122,7 @@ export async function importProjectTasks(
 
   let data: ProjectExport;
   try {
-    const text = await file.text();
-    data = JSON.parse(text);
+    data = JSON.parse(jsonContent);
   } catch {
     return { error: "Fichier JSON invalide" };
   }

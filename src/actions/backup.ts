@@ -89,19 +89,14 @@ export type ImportState = { success?: string; error?: string } | null;
 export async function importBackup(_prevState: ImportState, formData: FormData) {
   const user = await requireUser();
 
-  const file = formData.get("file") as File;
-  if (!file) {
-    return { error: "Aucun fichier sélectionné" };
-  }
-
-  if (!file.name.endsWith(".json")) {
-    return { error: "Le fichier doit être au format JSON" };
+  const jsonContent = formData.get("jsonContent") as string;
+  if (!jsonContent || jsonContent.trim().length === 0) {
+    return { error: "Aucune donnée JSON fournie" };
   }
 
   let backup: BackupData;
   try {
-    const text = await file.text();
-    backup = JSON.parse(text);
+    backup = JSON.parse(jsonContent);
   } catch {
     return { error: "Fichier JSON invalide" };
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState, useRef } from "react";
 import { exportProject, importProjectTasks } from "@/actions/project-backup";
 import type { ProjectImportState } from "@/actions/project-backup";
 import { Download, Upload, Loader2 } from "lucide-react";
@@ -12,10 +12,9 @@ type Props = {
 export function ProjectBackup({ projectId }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [importState, formAction, isImporting] = useActionState<
-    ProjectImportState,
-    FormData
-  >(importProjectTasks, null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importState, setImportState] = useState<ProjectImportState>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -33,6 +32,37 @@ export function ProjectBackup({ projectId }: Props) {
       }
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleImport = async () => {
+    const file = fileInputRef.current?.files?.[0];
+    if (!file) {
+      setImportState({ error: "Aucun fichier sélectionné" });
+      return;
+    }
+    if (!file.name.endsWith(".json")) {
+      setImportState({ error: "Le fichier doit être au format JSON" });
+      return;
+    }
+
+    setIsImporting(true);
+    setImportState(null);
+
+    try {
+      const text = await file.text();
+      const formData = new FormData();
+      formData.append("projectId", projectId);
+      formData.append("jsonContent", text);
+
+      const result = await importProjectTasks(null, formData);
+      setImportState(result);
+    } catch (err) {
+      setImportState({
+        error: err instanceof Error ? err.message : "Erreur lors de l'importation",
+      });
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -61,20 +91,18 @@ export function ProjectBackup({ projectId }: Props) {
             Exporter le projet
           </button>
 
-          <form action={formAction} className="space-y-3">
-            <input type="hidden" name="projectId" value={projectId} />
+          <div className="space-y-3">
             <label className="block text-sm font-medium text-foreground">
               Restaurer des tâches
             </label>
             <input
+              ref={fileInputRef}
               type="file"
-              name="file"
               accept=".json"
-              required
               className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground file:hover:opacity-90"
             />
             <button
-              type="submit"
+              onClick={handleImport}
               disabled={isImporting}
               className="flex w-full items-center justify-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-accent disabled:opacity-50"
             >
@@ -95,7 +123,7 @@ export function ProjectBackup({ projectId }: Props) {
                 {importState.success}
               </div>
             )}
-          </form>
+          </div>
         </div>
       )}
     </div>
