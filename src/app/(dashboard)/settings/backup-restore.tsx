@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useRef } from "react";
+import { useActionState, useState, useRef, useCallback } from "react";
 import { exportBackup, importBackup } from "@/actions/backup";
 import type { ImportState } from "@/actions/backup";
 import { Download, Upload, Loader2 } from "lucide-react";
@@ -11,8 +11,10 @@ export function BackupRestore() {
     null
   );
   const [isExporting, setIsExporting] = useState(false);
-  const [jsonContent, setJsonContent] = useState("");
+  const [fileSelected, setFileSelected] = useState(false);
+  const jsonRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -32,20 +34,24 @@ export function BackupRestore() {
     }
   };
 
-  const handleFileChange = async () => {
+  const handleFileChange = useCallback(async () => {
     const file = fileInputRef.current?.files?.[0];
     if (!file) return;
-    if (!file.name.endsWith(".json")) {
-      setJsonContent("// Le fichier doit être au format JSON");
-      return;
-    }
+    if (!file.name.endsWith(".json")) return;
     try {
       const text = await file.text();
-      setJsonContent(text);
-    } catch {
-      setJsonContent("// Erreur de lecture du fichier");
+      if (jsonRef.current) jsonRef.current.value = text;
+      if (textareaRef.current) textareaRef.current.value = text;
+      setFileSelected(true);
+    } catch { /* ignore */ }
+  }, []);
+
+  const handleSubmit = useCallback((_e: React.FormEvent<HTMLFormElement>) => {
+    const textarea = textareaRef.current;
+    if (textarea && textarea.value.trim()) {
+      if (jsonRef.current) jsonRef.current.value = textarea.value;
     }
-  };
+  }, []);
 
   return (
     <div className="space-y-4 rounded-lg border border-border bg-card p-5">
@@ -65,7 +71,8 @@ export function BackupRestore() {
           Exporter les données
         </button>
 
-        <form action={formAction} className="space-y-3">
+        <form action={formAction} onSubmit={handleSubmit} className="space-y-3">
+          <input ref={jsonRef} type="hidden" name="jsonContent" />
           <label className="block text-sm font-medium text-foreground">
             Restaurer une sauvegarde
           </label>
@@ -77,17 +84,16 @@ export function BackupRestore() {
             className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground file:hover:opacity-90"
           />
           <textarea
+            ref={textareaRef}
             name="jsonContent"
-            value={jsonContent}
-            onChange={(e) => setJsonContent(e.target.value)}
+            defaultValue={fileSelected ? undefined : ""}
             rows={6}
-            placeholder="Ou collez le JSON ici..."
-            required
+            placeholder="Sélectionnez un fichier ci-dessus ou collez le JSON ici..."
             className="block w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary font-mono"
           />
           <button
             type="submit"
-            disabled={isImporting || !jsonContent.trim()}
+            disabled={isImporting}
             className="flex w-full items-center justify-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-accent disabled:opacity-50"
           >
             {isImporting ? (

@@ -87,83 +87,78 @@ export async function exportBackup() {
 export type ImportState = { success?: string; error?: string } | null;
 
 export async function importBackup(_prevState: ImportState, formData: FormData) {
-  const user = await requireUser();
-
-  const jsonContent = formData.get("jsonContent") as string;
-  if (!jsonContent || jsonContent.trim().length === 0) {
-    return { error: "Aucune donnée JSON fournie" };
-  }
-
-  let backup: BackupData;
   try {
-    backup = JSON.parse(jsonContent);
-  } catch {
-    return { error: "Fichier JSON invalide" };
-  }
+    const user = await requireUser();
 
-  if (!backup.version || !Array.isArray(backup.projects)) {
-    return { error: "Format de sauvegarde invalide" };
-  }
+    const jsonContent = formData.get("jsonContent") as string;
+    if (!jsonContent || jsonContent.trim().length === 0) {
+      return { error: "Aucune donnée JSON fournie" };
+    }
 
-  let createdProjects = 0;
-  let createdTasks = 0;
-  let createdSubTasks = 0;
+    let backup: BackupData;
+    try {
+      backup = JSON.parse(jsonContent);
+    } catch {
+      return { error: "Fichier JSON invalide" };
+    }
 
-  for (const p of backup.projects) {
-    const project = await prisma.project.create({
-      data: {
-        name: p.name,
-        description: p.description,
-        color: p.color,
-        deadline: p.deadline ? new Date(p.deadline) : null,
-        ownerId: user.id,
-      },
-    });
-    createdProjects++;
+    if (!backup.version || !Array.isArray(backup.projects)) {
+      return { error: "Format de sauvegarde invalide" };
+    }
 
-    for (const t of p.tasks) {
-      const task = await prisma.task.create({
+    let createdProjects = 0;
+    let createdTasks = 0;
+    let createdSubTasks = 0;
+
+    for (const p of backup.projects) {
+      const project = await prisma.project.create({
         data: {
-          title: t.title,
-          description: t.description,
-          status: t.status || "TODO",
-          priority: t.priority || "MEDIUM",
-          dueDate: t.dueDate ? new Date(t.dueDate) : null,
-          estimatedHours: t.estimatedHours,
-          position: t.position,
-          projectId: project.id,
+          name: p.name,
+          description: p.description,
+          color: p.color,
+          deadline: p.deadline ? new Date(p.deadline) : null,
+          ownerId: user.id,
         },
       });
-      createdTasks++;
+      createdProjects++;
 
-      for (const s of t.subtasks) {
-        await prisma.subTask.create({
+      for (const t of p.tasks) {
+        const task = await prisma.task.create({
           data: {
-            title: s.title,
-            completed: s.completed,
-            taskId: task.id,
+            title: t.title,
+            description: t.description,
+            status: t.status || "TODO",
+            priority: t.priority || "MEDIUM",
+            dueDate: t.dueDate ? new Date(t.dueDate) : null,
+            estimatedHours: t.estimatedHours,
+            position: t.position,
+            projectId: project.id,
           },
         });
-        createdSubTasks++;
+        createdTasks++;
+
+        for (const s of t.subtasks) {
+          await prisma.subTask.create({
+            data: {
+              title: s.title,
+              completed: s.completed,
+              taskId: task.id,
+            },
+          });
+          createdSubTasks++;
+        }
       }
     }
+
+    revalidatePath("/projects");
+    revalidatePath("/tasks");
+    revalidatePath("/dashboard");
+
+    return {
+      success: `${createdProjects} projet(s), ${createdTasks} tâche(s), ${createdSubTasks} sous-tâche(s) restauré(s)`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { error: `Erreur serveur : ${msg}` };
   }
-
-  logger.info(
-    { userId: user.id, projects: createdProjects, tasks: createdTasks, subtasks: createdSubTasks },
-    "backup:imported"
-  );
-  await logActivity(user.id, "backup:imported", null, "backup", {
-    projects: createdProjects,
-    tasks: createdTasks,
-    subtasks: createdSubTasks,
-  });
-
-  revalidatePath("/projects");
-  revalidatePath("/tasks");
-  revalidatePath("/dashboard");
-
-  return {
-    success: `${createdProjects} projet(s), ${createdTasks} tâche(s), ${createdSubTasks} sous-tâche(s) restauré(s)`,
-  };
 }

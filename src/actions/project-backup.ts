@@ -100,103 +100,97 @@ export async function importProjectTasks(
   _prevState: ProjectImportState,
   formData: FormData
 ) {
-  const user = await requireUser();
-
-  const projectId = formData.get("projectId") as string;
-  const jsonContent = formData.get("jsonContent") as string;
-
-  if (!projectId) {
-    return { error: "Projet non spécifié" };
-  }
-  if (!jsonContent || jsonContent.trim().length === 0) {
-    return { error: "Aucune donnée JSON fournie" };
-  }
-
-  const project = await prisma.project.findUnique({
-    where: { id: projectId },
-  });
-
-  if (!project || !canAccessProject(project.ownerId, user.id, user.role)) {
-    return { error: "Projet introuvable ou accès refusé" };
-  }
-
-  let data: ProjectExport;
   try {
-    data = JSON.parse(jsonContent);
-  } catch {
-    return { error: "Fichier JSON invalide" };
-  }
+    const user = await requireUser();
 
-  if (!data.version || !data.project || !Array.isArray(data.upcomingTasks)) {
-    return { error: "Format de sauvegarde invalide" };
-  }
+    const projectId = formData.get("projectId") as string;
+    const jsonContent = formData.get("jsonContent") as string;
 
-  const maxPosition = await prisma.task.aggregate({
-    where: { projectId },
-    _max: { position: true },
-  });
-  let nextPosition = (maxPosition._max.position ?? -1) + 1;
-  let createdCompleted = 0;
-  let createdUpcoming = 0;
+    if (!projectId) {
+      return { error: "Projet non spécifié" };
+    }
+    if (!jsonContent || jsonContent.trim().length === 0) {
+      return { error: "Aucune donnée JSON fournie" };
+    }
 
-  const createdTask = async (t: TaskData, status: string) => {
-    const task = await prisma.task.create({
-      data: {
-        title: t.title || "Sans titre",
-        description: t.description,
-        status,
-        priority: ["LOW", "MEDIUM", "HIGH", "URGENT"].includes(t.priority)
-          ? t.priority
-          : "MEDIUM",
-        dueDate: t.dueDate ? new Date(t.dueDate) : null,
-        estimatedHours: t.estimatedHours ?? null,
-        position: nextPosition++,
-        projectId,
-        completedAt: status === "DONE" ? new Date() : null,
-      },
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
     });
 
-    if (Array.isArray(t.subtasks)) {
-      for (const s of t.subtasks) {
-        await prisma.subTask.create({
-          data: {
-            title: s.title || "Sans titre",
-            completed: s.completed ?? false,
-            taskId: task.id,
-          },
-        });
+    if (!project || !canAccessProject(project.ownerId, user.id, user.role)) {
+      return { error: "Projet introuvable ou accès refusé" };
+    }
+
+    let data: ProjectExport;
+    try {
+      data = JSON.parse(jsonContent);
+    } catch {
+      return { error: "Fichier JSON invalide — vérifiez la syntaxe" };
+    }
+
+    if (!data.project || !Array.isArray(data.upcomingTasks)) {
+      return { error: "Format de sauvegarde invalide — 'project' et 'upcomingTasks' requis" };
+    }
+
+    const maxPosition = await prisma.task.aggregate({
+      where: { projectId },
+      _max: { position: true },
+    });
+    let nextPosition = (maxPosition._max.position ?? -1) + 1;
+    let createdCompleted = 0;
+    let createdUpcoming = 0;
+
+    const createdTask = async (t: TaskData, status: string) => {
+      const task = await prisma.task.create({
+        data: {
+          title: t.title || "Sans titre",
+          description: t.description,
+          status,
+          priority: ["LOW", "MEDIUM", "HIGH", "URGENT"].includes(t.priority)
+            ? t.priority
+            : "MEDIUM",
+          dueDate: t.dueDate ? new Date(t.dueDate) : null,
+          estimatedHours: t.estimatedHours ?? null,
+          position: nextPosition++,
+          projectId,
+          completedAt: status === "DONE" ? new Date() : null,
+        },
+      });
+
+      if (Array.isArray(t.subtasks)) {
+        for (const s of t.subtasks) {
+          await prisma.subTask.create({
+            data: {
+              title: s.title || "Sans titre",
+              completed: s.completed ?? false,
+              taskId: task.id,
+            },
+          });
+        }
+      }
+    };
+
+    if (Array.isArray(data.completedTasks)) {
+      for (const t of data.completedTasks) {
+        await createdTask(t, "DONE");
+        createdCompleted++;
       }
     }
-  };
 
-  if (Array.isArray(data.completedTasks)) {
-    for (const t of data.completedTasks) {
-      await createdTask(t, "DONE");
-      createdCompleted++;
+    for (const t of data.upcomingTasks) {
+      await createdTask(t, "TODO");
+      createdUpcoming++;
     }
+
+    revalidatePath(`/projects/${projectId}`);
+    revalidatePath("/projects");
+    revalidatePath("/tasks");
+
+    return {
+      success: `${createdCompleted} terminée(s) + ${createdUpcoming} à venir — ${createdCompleted + createdUpcoming} au total`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { error: `Erreur serveur : ${msg}` };
   }
-
-  for (const t of data.upcomingTasks) {
-    await createdTask(t, "TODO");
-    createdUpcoming++;
-  }
-
-  const total = createdCompleted + createdUpcoming;
-
-  logger.info(
-    { userId: user.id, projectId, completed: createdCompleted, upcoming: createdUpcoming },
-    "project:imported"
-  );
-  await logActivity(user.id, "backup:imported", projectId, "project", {
-    completed: createdCompleted,
-    upcoming: createdUpcoming,
-  });
-
-  revalidatePath(`/projects/${projectId}`);
-  revalidatePath("/projects");
-  revalidatePath("/tasks");
-
-  return {
-    success: `${createdCompleted} tâche(s) terminée(s) + ${createdUpcoming} tâche(s) à venir — ${total} au total`,
-  };
 }
