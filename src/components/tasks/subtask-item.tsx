@@ -9,9 +9,10 @@ import type { SerializedSubTask } from "@/types";
 type Props = {
   subTask: SerializedSubTask;
   isAssignee?: boolean;
+  onChange?: () => void;
 };
 
-export function SubTaskItem({ subTask, isAssignee = false }: Props) {
+export function SubTaskItem({ subTask, isAssignee = false, onChange }: Props) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(subTask.title);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -25,10 +26,12 @@ export function SubTaskItem({ subTask, isAssignee = false }: Props) {
 
   async function handleToggle() {
     await toggleSubTask(subTask.id);
+    onChange?.();
   }
 
   async function handleDelete() {
     await deleteSubTask(subTask.id);
+    onChange?.();
   }
 
   async function handleSave() {
@@ -39,6 +42,7 @@ export function SubTaskItem({ subTask, isAssignee = false }: Props) {
       await updateSubTask(subTask.id, formData);
     }
     setEditing(false);
+    onChange?.();
   }
 
   async function handleKeyDown(e: React.KeyboardEvent) {

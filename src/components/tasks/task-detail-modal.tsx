@@ -57,8 +57,13 @@ export function TaskDetailModal({ task, users, currentUserId, canEdit, onClose }
   const [error, setError] = useState<string | null>(null);
   const isAssignee = task.assigneeId === currentUserId;
 
+  const canManageSubtasks = canEdit || task.assigneeId === currentUserId;
   const currentAssignee = task.assignee;
   const createdBy = task.assignedBy;
+
+  const handleRefresh = useCallback(() => {
+    router.refresh();
+  }, [router]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -377,17 +382,15 @@ export function TaskDetailModal({ task, users, currentUserId, canEdit, onClose }
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Sous-tâches
           </h3>
-          {task.subtasks && task.subtasks.length > 0 ? (
-            <div onMouseDown={(e) => e.stopPropagation()}>
-              <SubTaskList
-                taskId={task.id}
-                subtasks={task.subtasks}
-                isAssignee={isAssignee}
-              />
-            </div>
-          ) : (
-            <p className="text-sm italic text-muted-foreground/60">Aucune sous-tâche</p>
-          )}
+          <div onMouseDown={(e) => e.stopPropagation()}>
+            <SubTaskList
+              key={task.subtasks?.length}
+              taskId={task.id}
+              subtasks={task.subtasks ?? []}
+              isAssignee={canManageSubtasks}
+              onChange={handleRefresh}
+            />
+          </div>
         </div>
 
         <div className="mt-5 border-t border-border pt-3">

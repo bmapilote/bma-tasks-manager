@@ -1,21 +1,40 @@
 "use client";
 
-import { useActionState } from "react";
+import { useRef, useState } from "react";
 import { createSubTask } from "@/actions/subtasks";
+import { useRouter } from "next/navigation";
 import { Loader2, Plus } from "lucide-react";
 
 type Props = {
   taskId: string;
+  onChange?: () => void;
 };
 
-export function SubTaskForm({ taskId }: Props) {
-  const [state, formAction, isPending] = useActionState<{ error: string } | undefined, FormData>(
-    async (_prev, formData) => createSubTask(formData),
-    undefined
-  );
+export function SubTaskForm({ taskId, onChange }: Props) {
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPending(true);
+    setError(null);
+    const formData = new FormData(e.currentTarget);
+    const result = await createSubTask(formData);
+    if (result?.error) {
+      setError(result.error);
+      setPending(false);
+      return;
+    }
+    formRef.current?.reset();
+    setPending(false);
+    onChange?.();
+    router.refresh();
+  }
 
   return (
-    <form action={formAction} className="flex items-center gap-2">
+    <form ref={formRef} onSubmit={handleSubmit} className="flex items-center gap-2">
       <input type="hidden" name="taskId" value={taskId} />
       <input
         name="title"
@@ -26,17 +45,17 @@ export function SubTaskForm({ taskId }: Props) {
       />
       <button
         type="submit"
-        disabled={isPending}
+        disabled={pending}
         className="flex shrink-0 items-center justify-center rounded-md bg-primary p-1 text-primary-foreground hover:opacity-90 disabled:opacity-50"
       >
-        {isPending ? (
+        {pending ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
         ) : (
           <Plus className="h-3.5 w-3.5" />
         )}
       </button>
-      {state?.error && (
-        <span className="text-xs text-destructive">{state.error}</span>
+      {error && (
+        <span className="text-xs text-destructive">{error}</span>
       )}
     </form>
   );
