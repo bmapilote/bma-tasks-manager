@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useCallback, useRef, useState } from "react";
-import { deleteTask, reassignTask } from "@/actions/tasks";
+import { updateTask, deleteTask, reassignTask } from "@/actions/tasks";
 import { useRouter } from "next/navigation";
 import { cn, formatDate } from "@/lib/utils";
 import { SubTaskList } from "./subtask-list";
-import { X, Calendar, Clock, User, Trash2 } from "lucide-react";
+import { X, Calendar, Clock, User, Trash2, Pencil, Loader2 } from "lucide-react";
 import type { SerializedTask } from "@/types";
 
 const statusLabels: Record<string, string> = {
@@ -52,13 +52,25 @@ export function TaskDetailModal({ task, users, currentUserId, canEdit, onClose }
   const router = useRouter();
   const overlayRef = useRef<HTMLDivElement>(null);
   const [showAssigneePicker, setShowAssigneePicker] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const isAssignee = task.assigneeId === currentUserId;
+
+  const currentAssignee = task.assignee;
+  const createdBy = task.assignedBy;
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (isEditing) {
+          setIsEditing(false);
+        } else {
+          onClose();
+        }
+      }
     },
-    [onClose]
+    [isEditing, onClose]
   );
 
   useEffect(() => {
@@ -71,17 +83,168 @@ export function TaskDetailModal({ task, users, currentUserId, canEdit, onClose }
   }, [handleKeyDown]);
 
   const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === overlayRef.current) onClose();
+    if (e.target === overlayRef.current && !isEditing) onClose();
   };
-
-  const currentAssignee = task.assignee;
-  const createdBy = task.assignedBy;
 
   const handleAssigneeChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     await reassignTask(task.id, value || null);
     router.refresh();
   };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    const formData = new FormData(e.currentTarget);
+    const result = await updateTask(task.id, formData);
+    if (result?.error) {
+      setError(result.error);
+      setSaving(false);
+      return;
+    }
+    setIsEditing(false);
+    setSaving(false);
+    router.refresh();
+  };
+
+  if (isEditing && canEdit) {
+    return (
+      <div
+        ref={overlayRef}
+        onClick={handleOverlayClick}
+        className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 pt-12 backdrop-blur-sm"
+      >
+        <div className="relative w-full max-w-xl animate-in rounded-xl border border-border bg-card p-6 shadow-2xl slide-in-from-bottom-4">
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground">Modifier la tâche</h3>
+            <button
+              onClick={() => setIsEditing(false)}
+              className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="edit-title" className="mb-1 block text-xs font-medium text-foreground">
+                Titre
+              </label>
+              <input
+                id="edit-title"
+                name="title"
+                type="text"
+                defaultValue={task.title}
+                required
+                className="block w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="edit-description" className="mb-1 block text-xs font-medium text-foreground">
+                Description
+              </label>
+              <textarea
+                id="edit-description"
+                name="description"
+                rows={4}
+                defaultValue={task.description ?? ""}
+                className="block w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="edit-status" className="mb-1 block text-xs font-medium text-foreground">
+                  Statut
+                </label>
+                <select
+                  id="edit-status"
+                  name="status"
+                  defaultValue={task.status}
+                  className="block w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="TODO">À faire</option>
+                  <option value="IN_PROGRESS">En cours</option>
+                  <option value="DONE">Terminé</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="edit-priority" className="mb-1 block text-xs font-medium text-foreground">
+                  Priorité
+                </label>
+                <select
+                  id="edit-priority"
+                  name="priority"
+                  defaultValue={task.priority}
+                  className="block w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="LOW">Basse</option>
+                  <option value="MEDIUM">Moyenne</option>
+                  <option value="HIGH">Haute</option>
+                  <option value="URGENT">Urgente</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="edit-dueDate" className="mb-1 block text-xs font-medium text-foreground">
+                  Échéance
+                </label>
+                <input
+                  id="edit-dueDate"
+                  name="dueDate"
+                  type="date"
+                  defaultValue={task.dueDate ? task.dueDate.split("T")[0] : ""}
+                  className="block w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="edit-estimatedHours" className="mb-1 block text-xs font-medium text-foreground">
+                  Heures estimées
+                </label>
+                <input
+                  id="edit-estimatedHours"
+                  name="estimatedHours"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  defaultValue={task.estimatedHours ?? ""}
+                  className="block w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-300">
+                {error}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                Enregistrer
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -99,12 +262,23 @@ export function TaskDetailModal({ task, users, currentUserId, canEdit, onClose }
               {priorityLabels[task.priority]}
             </span>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            {canEdit && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                title="Modifier"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         <h2 className="text-lg font-semibold text-foreground">{task.title}</h2>
